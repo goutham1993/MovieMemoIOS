@@ -201,10 +201,6 @@ struct AddEditMovieView: View {
     }
     
     private func saveMovie() {
-        print("Save button pressed!")
-        print("Title: \(title)")
-        print("Is title empty: \(title.isEmpty)")
-        
         let newEntry = WatchedEntry(
             title: title,
             rating: rating,
@@ -223,9 +219,7 @@ struct AddEditMovieView: View {
             city: city.isEmpty ? nil : city
         )
         
-        print("Created new entry: \(newEntry.title)")
         onSave(newEntry)
-        print("onSave called")
     }
 }
 

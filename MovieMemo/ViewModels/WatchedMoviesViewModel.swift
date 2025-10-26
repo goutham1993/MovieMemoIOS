@@ -43,11 +43,8 @@ class WatchedMoviesViewModel: ObservableObject {
     }
     
     private func loadData() {
-        print("ViewModel: Loading data from repository")
         watchedEntries = repository.getAllWatchedEntries()
-        print("ViewModel: Loaded \(watchedEntries.count) entries from repository")
         applyFiltersAndSort()
-        print("ViewModel: Applied filters. Filtered entries count: \(filteredEntries.count)")
     }
     
     private func applyFiltersAndSort(searchText: String? = nil, filter: WatchedFilter? = nil, sortOption: SortOption? = nil) {
@@ -96,11 +93,8 @@ class WatchedMoviesViewModel: ObservableObject {
     }
     
     func addMovie(_ entry: WatchedEntry) {
-        print("ViewModel: Adding movie - \(entry.title)")
         repository.addWatchedEntry(entry)
-        print("ViewModel: Calling loadData after adding movie")
         loadData()
-        print("ViewModel: LoadData completed. Current entries count: \(watchedEntries.count)")
     }
     
     func updateMovie(_ entry: WatchedEntry) {
