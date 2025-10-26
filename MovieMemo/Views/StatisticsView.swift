@@ -7,15 +7,18 @@
 
 import SwiftUI
 import SwiftData
+import Combine
 
 struct StatisticsView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: StatisticsViewModel?
+    @State private var isLoading = true
+    @State private var statisticsData: StatisticsData?
     
     var body: some View {
         NavigationView {
             ScrollView {
-                if viewModel?.isLoading == true {
+                if isLoading {
                     VStack {
                         ProgressView()
                         Text("Loading statistics...")
@@ -23,7 +26,7 @@ struct StatisticsView: View {
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let data = viewModel?.statisticsData {
+                } else if let data = statisticsData {
                     LazyVStack(spacing: 20) {
                         // Overview Cards
                         OverviewCardsView(data: data)
@@ -61,7 +64,21 @@ struct StatisticsView: View {
         }
         .onAppear {
             if viewModel == nil {
+                print("Creating ViewModel...")
                 viewModel = StatisticsViewModel(repository: MovieRepository(modelContext: modelContext))
+                print("ViewModel created")
+            }
+        }
+        .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
+            if let viewModel = viewModel {
+                if isLoading != viewModel.isLoading {
+                    print("UI: Syncing isLoading: \(viewModel.isLoading)")
+                    isLoading = viewModel.isLoading
+                }
+                if statisticsData != viewModel.statisticsData {
+                    print("UI: Syncing statisticsData: \(viewModel.statisticsData != nil)")
+                    statisticsData = viewModel.statisticsData
+                }
             }
         }
     }

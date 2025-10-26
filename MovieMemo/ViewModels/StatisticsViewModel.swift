@@ -23,17 +23,29 @@ class StatisticsViewModel: ObservableObject {
     }
     
     func loadStatistics() {
+        print("ViewModel: Starting loadStatistics")
         isLoading = true
         
+        // Get data on main thread since ModelContext is not thread-safe
+        let watchedEntries = repository.getAllWatchedEntries()
+        print("ViewModel: Got \(watchedEntries.count) entries from repository")
+        
+        // Do heavy calculations on background thread
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
+            guard let self = self else { 
+                print("ViewModel: Self is nil in background thread")
+                return 
+            }
             
-            let watchedEntries = self.repository.getAllWatchedEntries()
+            print("ViewModel: Starting calculations on background thread")
             let statistics = self.calculateStatistics(from: watchedEntries)
+            print("ViewModel: Calculations completed")
             
             DispatchQueue.main.async {
+                print("ViewModel: Updating UI on main thread")
                 self.statisticsData = statistics
                 self.isLoading = false
+                print("ViewModel: UI updated - isLoading: \(self.isLoading), hasData: \(self.statisticsData != nil)")
             }
         }
     }

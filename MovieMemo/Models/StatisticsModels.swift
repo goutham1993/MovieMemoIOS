@@ -7,25 +7,25 @@
 
 import Foundation
 
-struct KeyCount: Identifiable {
+struct KeyCount: Identifiable, Equatable {
     let id = UUID()
     let category: String
     let count: Int
 }
 
-struct KeySum: Identifiable {
+struct KeySum: Identifiable, Equatable {
     let id = UUID()
     let category: String
     let total: Int
 }
 
-struct MonthCount: Identifiable {
+struct MonthCount: Identifiable, Equatable {
     let id = UUID()
     let yearMonth: String // yyyy-MM format
     let count: Int
 }
 
-struct StatisticsData {
+struct StatisticsData: Equatable {
     let totalMoviesWatched: Int
     let thisMonthMovies: Int
     let totalAmountSpent: Int // in cents
