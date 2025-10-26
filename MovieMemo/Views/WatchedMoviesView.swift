@@ -199,7 +199,7 @@ struct WatchedMovieRowView: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.orange.opacity(0.1))
+                    .background(Color.orange.opacity(0.2))
                     .cornerRadius(12)
                 }
             }
@@ -297,13 +297,13 @@ struct WatchedMovieRowView: View {
             HStack(spacing: 8) {
                 // Genre tag
                 if let genre = entry.genre, !genre.isEmpty {
-                    Text(genre.lowercased())
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.orange.opacity(0.1))
-                        .foregroundColor(.primary)
-                        .cornerRadius(8)
+                        Text(genre.lowercased())
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.orange.opacity(0.2))
+                            .foregroundColor(.primary)
+                            .cornerRadius(8)
                 }
                 
                 // Location type tag
@@ -315,7 +315,7 @@ struct WatchedMovieRowView: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.orange.opacity(0.1))
+                .background(Color.orange.opacity(0.2))
                 .foregroundColor(.primary)
                 .cornerRadius(8)
                 
@@ -324,18 +324,18 @@ struct WatchedMovieRowView: View {
                     .font(.caption)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.orange.opacity(0.1))
+                    .background(Color.orange.opacity(0.2))
                     .foregroundColor(.primary)
                     .cornerRadius(8)
             }
         }
-        .padding(16)
-        .background(Color.orange.opacity(0.05))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
-        )
+                .padding(16)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
     }
     
     private func formatDate(_ dateString: String) -> String {

@@ -260,7 +260,7 @@ struct ChartSectionView: View {
                             .font(.subheadline)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color.blue.opacity(0.1))
+                            .background(Color.blue.opacity(0.15))
                             .foregroundColor(.blue)
                             .cornerRadius(16)
                     }

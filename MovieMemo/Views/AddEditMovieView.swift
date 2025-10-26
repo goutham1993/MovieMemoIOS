@@ -87,7 +87,7 @@ struct AddEditMovieView: View {
                         }
                         .padding(.vertical, 8)
                         .padding(.horizontal, 12)
-                        .background(Color.blue.opacity(0.1))
+                        .background(Color.blue.opacity(0.15))
                         .cornerRadius(8)
                         .transition(.asymmetric(
                             insertion: .scale(scale: 0.95).combined(with: .opacity).animation(.easeInOut(duration: 0.3)),
