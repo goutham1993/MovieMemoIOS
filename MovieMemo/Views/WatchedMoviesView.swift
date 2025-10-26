@@ -175,61 +175,176 @@ struct WatchedMovieRowView: View {
     let entry: WatchedEntry
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Top section with title and rating
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.title)
-                        .font(.headline)
-                        .lineLimit(1)
-                    
-                    HStack {
-                        Text(entry.watchedDate)
+                Text(entry.title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                if let rating = entry.rating {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .foregroundColor(.yellow)
+                            .font(.caption)
+                        Text("\(rating)/10")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.brown)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(12)
+                }
+            }
+            
+            // Main content area
+            HStack(alignment: .top, spacing: 16) {
+                // Left column - Event details
+                VStack(alignment: .leading, spacing: 8) {
+                    // Date
+                    HStack(spacing: 8) {
+                        Image(systemName: "calendar")
+                            .foregroundColor(.red)
+                            .font(.caption)
+                        Text(formatDate(entry.watchedDate))
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Spacer()
-                        
-                        if let rating = entry.rating {
-                            HStack(spacing: 2) {
-                                ForEach(1...5, id: \.self) { star in
-                                    Image(systemName: star <= rating ? "star.fill" : "star")
-                                        .foregroundColor(.yellow)
-                                        .font(.caption)
-                                }
-                            }
+                            .foregroundColor(.primary)
+                    }
+                    
+                    // Companions
+                    if let companions = entry.companions, !companions.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.2")
+                                .foregroundColor(.blue)
+                                .font(.caption)
+                            Text("with \(companions)")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
                         }
+                    }
+                    
+                    // Language
+                    HStack(spacing: 8) {
+                        Image(systemName: "globe")
+                            .foregroundColor(.blue)
+                            .font(.caption)
+                        Text("in \(entry.languageEnum.displayName)")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                    }
+                    
+                    // Location
+                    HStack(spacing: 8) {
+                        Image(systemName: "location")
+                            .foregroundColor(.red)
+                            .font(.caption)
+                        Text("at \(getLocationText())")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
                     }
                 }
                 
                 Spacer()
                 
-                VStack(alignment: .trailing, spacing: 4) {
-                    HStack {
-                        Text(entry.locationTypeEnum.icon)
-                        Text(entry.locationTypeEnum.displayName)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                // Right column - Additional info
+                VStack(alignment: .trailing, spacing: 8) {
+                    // Duration
+                    if let duration = entry.durationMin, duration > 0 {
+                        HStack(spacing: 8) {
+                            Image(systemName: "clock")
+                                .foregroundColor(.gray)
+                                .font(.caption)
+                            Text("\(duration) min")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                        }
                     }
                     
+                    // Price
                     if let spend = entry.spendCents, spend > 0 {
-                        Text(entry.formattedSpend)
-                            .font(.caption)
-                            .foregroundColor(.green)
+                        HStack(spacing: 8) {
+                            Image(systemName: "dollarsign.circle")
+                                .foregroundColor(.yellow)
+                                .font(.caption)
+                            Text(entry.formattedSpend)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                        }
                     }
                 }
             }
             
-            if let genre = entry.genre, !genre.isEmpty {
-                Text(genre)
+            // Bottom section - Tags
+            HStack(spacing: 8) {
+                // Genre tag
+                if let genre = entry.genre, !genre.isEmpty {
+                    Text(genre.lowercased())
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.1))
+                        .foregroundColor(.primary)
+                        .cornerRadius(8)
+                }
+                
+                // Location type tag
+                HStack(spacing: 4) {
+                    Text(entry.locationTypeEnum.icon)
+                        .font(.caption)
+                    Text(entry.locationTypeEnum.displayName)
+                        .font(.caption)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.orange.opacity(0.1))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                
+                // Time of day tag
+                Text(entry.timeOfDayEnum.displayName)
                     .font(.caption)
                     .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(Color.blue.opacity(0.1))
-                    .foregroundColor(.blue)
-                    .cornerRadius(4)
+                    .padding(.vertical, 4)
+                    .background(Color.orange.opacity(0.1))
+                    .foregroundColor(.primary)
+                    .cornerRadius(8)
             }
         }
-        .padding(.vertical, 4)
+        .padding(16)
+        .background(Color.orange.opacity(0.05))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private func formatDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let date = formatter.date(from: dateString) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "EEEE, MMM d, yyyy"
+            return displayFormatter.string(from: date)
+        }
+        return dateString
+    }
+    
+    private func getLocationText() -> String {
+        if entry.locationTypeEnum == .theater {
+            if let theaterName = entry.theaterName, !theaterName.isEmpty {
+                return "\(theaterName)\(entry.city != nil ? ", \(entry.city!)" : "")"
+            } else {
+                return "Theater"
+            }
+        } else {
+            return entry.locationTypeEnum.displayName
+        }
     }
 }
 
