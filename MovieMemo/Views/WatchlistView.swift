@@ -101,6 +101,10 @@ struct WatchlistView: View {
                         }
                         viewModel?.editingItem = nil
                         showingAddItem = false
+                        // Force refresh the UI
+                        DispatchQueue.main.async {
+                            viewModel?.refreshData()
+                        }
                     },
                     onCancel: {
                         viewModel?.editingItem = nil
@@ -122,6 +126,12 @@ struct WatchlistView: View {
         .onAppear {
             if viewModel == nil {
                 viewModel = WatchlistViewModel(repository: MovieRepository(modelContext: modelContext))
+            }
+        }
+        .onChange(of: showingAddItem) { _, newValue in
+            // Refresh data when the add item sheet is dismissed
+            if !newValue {
+                viewModel?.refreshData()
             }
         }
     }

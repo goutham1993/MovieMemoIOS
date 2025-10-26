@@ -32,12 +32,10 @@ struct AddEditWatchlistItemView: View {
                     
                     Picker("Language", selection: $language) {
                         ForEach(Language.allCases, id: \.self) { lang in
-                            HStack {
-                                Text(lang.flag)
-                                Text(lang.displayName)
-                            }.tag(lang)
+                            Text("\(lang.icon) \(lang.displayName)").tag(lang)
                         }
                     }
+                    .pickerStyle(MenuPickerStyle())
                 }
                 
                 Section("Optional Information") {
