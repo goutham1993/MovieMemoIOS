@@ -263,6 +263,18 @@ struct WatchedMovieRowView: View {
                             .font(.subheadline)
                             .foregroundColor(.primary)
                     }
+                    
+                    // Notes
+                    if let notes = entry.notes, !notes.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "note.text")
+                                .foregroundColor(.purple)
+                                .font(.caption)
+                            Text(notes)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                        }
+                    }
                 }
                 
                 Spacer()
