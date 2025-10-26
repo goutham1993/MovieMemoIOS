@@ -72,6 +72,29 @@ struct AddEditMovieView: View {
                     }
                     .pickerStyle(MenuPickerStyle())
                     
+                    // Theater-specific fields - show immediately after location type
+                    if locationType == .theater {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Theater Details")
+                                .font(.headline)
+                                .foregroundColor(.blue)
+                            
+                            TextField("Theater Name", text: $theaterName)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            
+                            TextField("City", text: $city)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.95).combined(with: .opacity).animation(.easeInOut(duration: 0.3)),
+                            removal: .scale(scale: 0.95).combined(with: .opacity).animation(.easeInOut(duration: 0.2))
+                        ))
+                    }
+                    
                     Picker("Time of Day", selection: $timeOfDay) {
                         ForEach(TimeOfDay.allCases, id: \.self) { time in
                             Text("\(time.icon) \(time.displayName)").tag(time)
@@ -148,15 +171,6 @@ struct AddEditMovieView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
                 
-                if locationType == .theater {
-                    Section("Theater Information") {
-                        TextField("Theater Name", text: $theaterName)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                        
-                        TextField("City", text: $city)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                    }
-                }
             }
             .navigationTitle(isEditing ? "Edit Movie" : "Add Movie")
             .navigationBarTitleDisplayMode(.inline)
