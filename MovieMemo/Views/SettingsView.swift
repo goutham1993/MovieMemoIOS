@@ -16,9 +16,23 @@ struct SettingsView: View {
     @State private var showingClearWatchlistAlert = false
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
-    @State private var exportData: Data?
     @State private var showingSuccessAlert = false
     @State private var successMessage = ""
+    @State private var exportData: Data?
+    
+    private var exportFileURL: URL? {
+        guard let data = exportData else { return nil }
+        let fileName = "MovieMemo_Export_\(Date().timeIntervalSince1970).json"
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        
+        do {
+            try data.write(to: tempURL)
+            return tempURL
+        } catch {
+            print("Export error: \(error)")
+            return nil
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -71,8 +85,21 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingExportSheet) {
-                if let data = exportData {
-                    ShareSheet(activityItems: [data])
+                if let fileURL = exportFileURL {
+                    ShareSheet(activityItems: [fileURL])
+                } else {
+                    VStack {
+                        Text("Export Failed")
+                            .font(.headline)
+                        Text("Unable to create export file. Please try again.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Button("Close") {
+                            showingExportSheet = false
+                        }
+                        .padding()
+                    }
+                    .padding()
                 }
             }
             .sheet(isPresented: $showingImportSheet) {

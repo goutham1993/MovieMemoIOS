@@ -191,6 +191,10 @@ class MovieRepository: ObservableObject {
         let watchlistItems = getAllWatchlistItems()
         let genres = getAllGenres()
         
+        print("Export: Found \(watchedEntries.count) watched entries")
+        print("Export: Found \(watchlistItems.count) watchlist items")
+        print("Export: Found \(genres.count) genres")
+        
         let exportData = ExportData(
             watchedEntries: watchedEntries.map { WatchedEntryData(from: $0) },
             watchlistItems: watchlistItems.map { WatchlistItemData(from: $0) },
@@ -198,7 +202,14 @@ class MovieRepository: ObservableObject {
             exportDate: Date()
         )
         
-        return try? JSONEncoder().encode(exportData)
+        do {
+            let data = try JSONEncoder().encode(exportData)
+            print("Export: Successfully encoded data, size: \(data.count) bytes")
+            return data
+        } catch {
+            print("Export: Failed to encode data: \(error)")
+            return nil
+        }
     }
     
     func importData(_ data: Data) -> Bool {
