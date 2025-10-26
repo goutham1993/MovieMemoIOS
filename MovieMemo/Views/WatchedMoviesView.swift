@@ -18,9 +18,11 @@ struct WatchedMoviesView: View {
     @State private var entryToDelete: WatchedEntry?
     @State private var showingAddMovie = false
     @State private var editingEntry: WatchedEntry?
+    @State private var refreshTrigger = 0
     
     // Simple computed property for filtered entries
     private var filteredEntries: [WatchedEntry] {
+        let _ = refreshTrigger // This ensures the computed property recalculates when refreshTrigger changes
         let repository = MovieRepository(modelContext: modelContext)
         var entries = repository.getWatchedEntries(filter: selectedFilter)
         
@@ -151,6 +153,8 @@ struct WatchedMoviesView: View {
                         }
                         editingEntry = nil
                         showingAddMovie = false
+                        // Trigger UI refresh
+                        refreshTrigger += 1
                     },
                     onCancel: {
                         editingEntry = nil
@@ -164,6 +168,8 @@ struct WatchedMoviesView: View {
                     if let entry = entryToDelete {
                         let repository = MovieRepository(modelContext: modelContext)
                         repository.deleteWatchedEntry(entry)
+                        // Trigger UI refresh
+                        refreshTrigger += 1
                     }
                 }
             } message: {
