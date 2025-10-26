@@ -107,6 +107,9 @@ struct WatchedMoviesView: View {
                         }
                     }
                     .listStyle(PlainListStyle())
+                    .onAppear {
+                        print("List appeared with \(viewModel?.filteredEntries.count ?? 0) entries")
+                    }
                 }
             }
             .navigationTitle("Watched Movies")
@@ -127,13 +130,21 @@ struct WatchedMoviesView: View {
                 AddEditMovieView(
                     entry: viewModel?.editingEntry,
                     onSave: { entry in
+                        print("onSave callback called with entry: \(entry.title)")
                         if viewModel?.editingEntry != nil {
+                            print("Updating movie")
                             viewModel?.updateMovie(entry)
                         } else {
+                            print("Adding new movie")
                             viewModel?.addMovie(entry)
                         }
                         viewModel?.editingEntry = nil
                         showingAddMovie = false
+                        print("Sheet should be dismissed")
+                        // Force refresh the UI
+                        DispatchQueue.main.async {
+                            viewModel?.refreshData()
+                        }
                     },
                     onCancel: {
                         viewModel?.editingEntry = nil
@@ -156,6 +167,12 @@ struct WatchedMoviesView: View {
             // Initialize with proper model context
             if viewModel == nil {
                 viewModel = WatchedMoviesViewModel(repository: MovieRepository(modelContext: modelContext))
+            }
+        }
+        .onChange(of: showingAddMovie) { _, newValue in
+            // Refresh data when the add movie sheet is dismissed
+            if !newValue {
+                viewModel?.refreshData()
             }
         }
     }

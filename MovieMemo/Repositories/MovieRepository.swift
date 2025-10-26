@@ -50,8 +50,14 @@ class MovieRepository: ObservableObject {
     }
     
     func addWatchedEntry(_ entry: WatchedEntry) {
+        print("Repository: Adding watched entry - \(entry.title)")
         modelContext.insert(entry)
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+            print("Repository: Successfully saved entry")
+        } catch {
+            print("Repository: Error saving entry - \(error)")
+        }
     }
     
     func updateWatchedEntry(_ entry: WatchedEntry) {
