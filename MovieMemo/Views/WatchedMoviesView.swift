@@ -11,31 +11,46 @@ import Combine
 
 struct WatchedMoviesView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var viewModel: WatchedMoviesViewModel?
+    @State private var searchText = ""
+    @State private var selectedFilter: WatchedFilter = .all
+    @State private var sortOption: SortOption = .dateNewest
     @State private var showingDeleteAlert = false
     @State private var entryToDelete: WatchedEntry?
     @State private var showingAddMovie = false
+    @State private var editingEntry: WatchedEntry?
     
-    // Computed properties for bindings
-    private var searchTextBinding: Binding<String> {
-        Binding(
-            get: { viewModel?.searchText ?? "" },
-            set: { viewModel?.searchText = $0 }
-        )
-    }
-    
-    private var selectedFilterBinding: Binding<WatchedFilter> {
-        Binding(
-            get: { viewModel?.selectedFilter ?? .all },
-            set: { viewModel?.selectedFilter = $0 }
-        )
-    }
-    
-    private var sortOptionBinding: Binding<SortOption> {
-        Binding(
-            get: { viewModel?.sortOption ?? .dateNewest },
-            set: { viewModel?.sortOption = $0 }
-        )
+    // Simple computed property for filtered entries
+    private var filteredEntries: [WatchedEntry] {
+        let repository = MovieRepository(modelContext: modelContext)
+        var entries = repository.getWatchedEntries(filter: selectedFilter)
+        
+        // Apply search filter
+        if !searchText.isEmpty {
+            entries = entries.filter { entry in
+                entry.title.localizedCaseInsensitiveContains(searchText) ||
+                (entry.notes?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+                (entry.companions?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+                (entry.genre?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+                (entry.theaterName?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+                (entry.city?.localizedCaseInsensitiveContains(searchText) ?? false)
+            }
+        }
+        
+        // Apply sorting
+        switch sortOption {
+        case .dateNewest:
+            return entries.sorted { $0.watchedDate > $1.watchedDate }
+        case .dateOldest:
+            return entries.sorted { $0.watchedDate < $1.watchedDate }
+        case .ratingHighest:
+            return entries.sorted { ($0.rating ?? 0) > ($1.rating ?? 0) }
+        case .ratingLowest:
+            return entries.sorted { ($0.rating ?? 0) < ($1.rating ?? 0) }
+        case .amountHighest:
+            return entries.sorted { ($0.spendCents ?? 0) > ($1.spendCents ?? 0) }
+        case .amountLowest:
+            return entries.sorted { ($0.spendCents ?? 0) < ($1.spendCents ?? 0) }
+        }
     }
     
     
@@ -48,14 +63,14 @@ struct WatchedMoviesView: View {
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.gray)
-                        TextField("Search movies...", text: searchTextBinding)
+                        TextField("Search movies...", text: $searchText)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                     
                     // Filter and Sort Controls
                     HStack {
                         // Filter Picker
-                        Picker("Filter", selection: selectedFilterBinding) {
+                        Picker("Filter", selection: $selectedFilter) {
                             ForEach(WatchedFilter.allCases, id: \.self) { filter in
                                 Text(filter.displayName).tag(filter)
                             }
@@ -63,7 +78,7 @@ struct WatchedMoviesView: View {
                         .pickerStyle(SegmentedPickerStyle())
                         
                         // Sort Picker
-                        Picker("Sort", selection: sortOptionBinding) {
+                        Picker("Sort", selection: $sortOption) {
                             ForEach(SortOption.allCases, id: \.self) { option in
                                 Text(option.displayName).tag(option)
                             }
@@ -74,15 +89,15 @@ struct WatchedMoviesView: View {
                 .padding(.horizontal)
                 
                 // Movies List
-                if viewModel?.filteredEntries.isEmpty == true {
+                if filteredEntries.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "film")
                             .font(.system(size: 50))
                             .foregroundColor(.gray)
-                        Text((viewModel?.searchText.isEmpty == true) ? "No movies watched yet" : "No movies found")
+                        Text(searchText.isEmpty ? "No movies watched yet" : "No movies found")
                             .font(.headline)
                             .foregroundColor(.gray)
-                        if viewModel?.searchText.isEmpty == true {
+                        if searchText.isEmpty {
                             Text("Tap the + button to add your first movie!")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
@@ -91,18 +106,16 @@ struct WatchedMoviesView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
-                        ForEach(viewModel?.filteredEntries ?? [], id: \.id) { entry in
+                        ForEach(filteredEntries, id: \.id) { entry in
                             WatchedMovieRowView(entry: entry)
                                 .onTapGesture {
-                                    print("Tapped on movie: \(entry.title)")
-                                    print("Before edit - showingAddMovie: \(showingAddMovie)")
-                                    viewModel?.editMovie(entry)
-                                    print("After edit - showingAddMovie: \(showingAddMovie)")
-                                    print("ViewModel editingEntry: \(viewModel?.editingEntry?.title ?? "nil")")
+                                    editingEntry = entry
+                                    showingAddMovie = true
                                 }
                                 .contextMenu {
                                     Button("Edit") {
-                                        viewModel?.editMovie(entry)
+                                        editingEntry = entry
+                                        showingAddMovie = true
                                     }
                                     Button("Delete", role: .destructive) {
                                         entryToDelete = entry
@@ -119,10 +132,7 @@ struct WatchedMoviesView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        if viewModel == nil {
-                            viewModel = WatchedMoviesViewModel(repository: MovieRepository(modelContext: modelContext))
-                        }
-                        viewModel?.isShowingAddMovie = true
+                        editingEntry = nil
                         showingAddMovie = true
                     }) {
                         Image(systemName: "plus")
@@ -131,24 +141,19 @@ struct WatchedMoviesView: View {
             }
             .sheet(isPresented: $showingAddMovie) {
                 AddEditMovieView(
-                    entry: viewModel?.editingEntry,
+                    entry: editingEntry,
                     onSave: { entry in
-                        if viewModel?.editingEntry != nil {
-                            viewModel?.updateMovie(entry)
+                        let repository = MovieRepository(modelContext: modelContext)
+                        if editingEntry != nil {
+                            repository.updateWatchedEntry(entry)
                         } else {
-                            viewModel?.addMovie(entry)
+                            repository.addWatchedEntry(entry)
                         }
-                        viewModel?.editingEntry = nil
-                        viewModel?.isShowingAddMovie = false
+                        editingEntry = nil
                         showingAddMovie = false
-                        // Force refresh the UI
-                        DispatchQueue.main.async {
-                            viewModel?.refreshData()
-                        }
                     },
                     onCancel: {
-                        viewModel?.editingEntry = nil
-                        viewModel?.isShowingAddMovie = false
+                        editingEntry = nil
                         showingAddMovie = false
                     }
                 )
@@ -157,31 +162,12 @@ struct WatchedMoviesView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
                     if let entry = entryToDelete {
-                        viewModel?.deleteMovie(entry)
+                        let repository = MovieRepository(modelContext: modelContext)
+                        repository.deleteWatchedEntry(entry)
                     }
                 }
             } message: {
                 Text("Are you sure you want to delete this movie? This action cannot be undone.")
-            }
-        }
-        .onAppear {
-            // Initialize with proper model context
-            if viewModel == nil {
-                viewModel = WatchedMoviesViewModel(repository: MovieRepository(modelContext: modelContext))
-            }
-        }
-        .onChange(of: showingAddMovie) { _, newValue in
-            // Refresh data when the add movie sheet is dismissed
-            if !newValue {
-                viewModel?.refreshData()
-            }
-        }
-        .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
-            if let viewModel = viewModel {
-                if showingAddMovie != viewModel.isShowingAddMovie {
-                    print("Syncing showingAddMovie: \(viewModel.isShowingAddMovie)")
-                    showingAddMovie = viewModel.isShowingAddMovie
-                }
             }
         }
     }

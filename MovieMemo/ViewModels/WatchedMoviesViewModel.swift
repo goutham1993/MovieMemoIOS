@@ -52,21 +52,19 @@ class WatchedMoviesViewModel: ObservableObject {
         let currentFilter = filter ?? self.selectedFilter
         let currentSortOption = sortOption ?? self.sortOption
         
+        // First apply location filter
         var entries = repository.getWatchedEntries(filter: currentFilter)
         
-        // Apply search filter
+        // Then apply search filter within the already filtered results
         if !currentSearchText.isEmpty {
-            entries = repository.searchWatchedEntries(query: currentSearchText)
-                .filter { entry in
-                    switch currentFilter {
-                    case .all:
-                        return true
-                    case .home:
-                        return entry.locationTypeEnum == .home
-                    case .theater:
-                        return entry.locationTypeEnum == .theater
-                    }
-                }
+            entries = entries.filter { entry in
+                entry.title.localizedCaseInsensitiveContains(currentSearchText) ||
+                (entry.notes?.localizedCaseInsensitiveContains(currentSearchText) ?? false) ||
+                (entry.companions?.localizedCaseInsensitiveContains(currentSearchText) ?? false) ||
+                (entry.genre?.localizedCaseInsensitiveContains(currentSearchText) ?? false) ||
+                (entry.theaterName?.localizedCaseInsensitiveContains(currentSearchText) ?? false) ||
+                (entry.city?.localizedCaseInsensitiveContains(currentSearchText) ?? false)
+            }
         }
         
         // Apply sorting
