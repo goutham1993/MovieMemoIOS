@@ -122,6 +122,7 @@ struct WatchedMoviesView: View {
                         if viewModel == nil {
                             viewModel = WatchedMoviesViewModel(repository: MovieRepository(modelContext: modelContext))
                         }
+                        viewModel?.isShowingAddMovie = true
                         showingAddMovie = true
                     }) {
                         Image(systemName: "plus")

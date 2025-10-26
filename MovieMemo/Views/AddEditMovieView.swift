@@ -201,23 +201,49 @@ struct AddEditMovieView: View {
     }
     
     private func saveMovie() {
-        let newEntry = WatchedEntry(
-            title: title,
-            rating: rating,
-            watchedDate: DateFormatter.isoDateFormatter.string(from: watchedDate),
-            locationType: locationType,
-            locationNotes: locationNotes.isEmpty ? nil : locationNotes,
-            companions: companions.isEmpty ? nil : companions,
-            spendCents: spendCents,
-            durationMin: durationMinutes,
-            timeOfDay: timeOfDay,
-            genre: genre.isEmpty ? nil : genre,
-            notes: notes.isEmpty ? nil : notes,
-            posterUri: posterUri.isEmpty ? nil : posterUri,
-            language: language,
-            theaterName: theaterName.isEmpty ? nil : theaterName,
-            city: city.isEmpty ? nil : city
-        )
+        let newEntry: WatchedEntry
+        if let originalEntry = entry {
+            // Editing existing entry - preserve the original ID and createdAt
+            newEntry = WatchedEntry(
+                title: title,
+                rating: rating,
+                watchedDate: DateFormatter.isoDateFormatter.string(from: watchedDate),
+                locationType: locationType,
+                locationNotes: locationNotes.isEmpty ? nil : locationNotes,
+                companions: companions.isEmpty ? nil : companions,
+                spendCents: spendCents,
+                durationMin: durationMinutes,
+                timeOfDay: timeOfDay,
+                genre: genre.isEmpty ? nil : genre,
+                notes: notes.isEmpty ? nil : notes,
+                posterUri: posterUri.isEmpty ? nil : posterUri,
+                language: language,
+                theaterName: theaterName.isEmpty ? nil : theaterName,
+                city: city.isEmpty ? nil : city
+            )
+            // Preserve the original ID and createdAt
+            newEntry.id = originalEntry.id
+            newEntry.createdAt = originalEntry.createdAt
+        } else {
+            // Creating new entry
+            newEntry = WatchedEntry(
+                title: title,
+                rating: rating,
+                watchedDate: DateFormatter.isoDateFormatter.string(from: watchedDate),
+                locationType: locationType,
+                locationNotes: locationNotes.isEmpty ? nil : locationNotes,
+                companions: companions.isEmpty ? nil : companions,
+                spendCents: spendCents,
+                durationMin: durationMinutes,
+                timeOfDay: timeOfDay,
+                genre: genre.isEmpty ? nil : genre,
+                notes: notes.isEmpty ? nil : notes,
+                posterUri: posterUri.isEmpty ? nil : posterUri,
+                language: language,
+                theaterName: theaterName.isEmpty ? nil : theaterName,
+                city: city.isEmpty ? nil : city
+            )
+        }
         
         onSave(newEntry)
     }

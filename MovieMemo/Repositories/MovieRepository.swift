@@ -55,6 +55,33 @@ class MovieRepository: ObservableObject {
     }
     
     func updateWatchedEntry(_ entry: WatchedEntry) {
+        // Find the existing entry by ID
+        let entryId = entry.id
+        let descriptor = FetchDescriptor<WatchedEntry>(
+            predicate: #Predicate<WatchedEntry> { watchedEntry in
+                watchedEntry.id == entryId
+            }
+        )
+        
+        if let existingEntry = try? modelContext.fetch(descriptor).first {
+            // Update the existing entry with new values
+            existingEntry.title = entry.title
+            existingEntry.rating = entry.rating
+            existingEntry.watchedDate = entry.watchedDate
+            existingEntry.locationType = entry.locationType
+            existingEntry.locationNotes = entry.locationNotes
+            existingEntry.companions = entry.companions
+            existingEntry.spendCents = entry.spendCents
+            existingEntry.durationMin = entry.durationMin
+            existingEntry.timeOfDay = entry.timeOfDay
+            existingEntry.genre = entry.genre
+            existingEntry.notes = entry.notes
+            existingEntry.posterUri = entry.posterUri
+            existingEntry.language = entry.language
+            existingEntry.theaterName = entry.theaterName
+            existingEntry.city = entry.city
+        }
+        
         try? modelContext.save()
     }
     
