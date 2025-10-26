@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import Combine
 
 struct WatchedMoviesView: View {
     @Environment(\.modelContext) private var modelContext
@@ -93,7 +94,11 @@ struct WatchedMoviesView: View {
                         ForEach(viewModel?.filteredEntries ?? [], id: \.id) { entry in
                             WatchedMovieRowView(entry: entry)
                                 .onTapGesture {
+                                    print("Tapped on movie: \(entry.title)")
+                                    print("Before edit - showingAddMovie: \(showingAddMovie)")
                                     viewModel?.editMovie(entry)
+                                    print("After edit - showingAddMovie: \(showingAddMovie)")
+                                    print("ViewModel editingEntry: \(viewModel?.editingEntry?.title ?? "nil")")
                                 }
                                 .contextMenu {
                                     Button("Edit") {
@@ -133,6 +138,7 @@ struct WatchedMoviesView: View {
                             viewModel?.addMovie(entry)
                         }
                         viewModel?.editingEntry = nil
+                        viewModel?.isShowingAddMovie = false
                         showingAddMovie = false
                         // Force refresh the UI
                         DispatchQueue.main.async {
@@ -141,6 +147,7 @@ struct WatchedMoviesView: View {
                     },
                     onCancel: {
                         viewModel?.editingEntry = nil
+                        viewModel?.isShowingAddMovie = false
                         showingAddMovie = false
                     }
                 )
@@ -166,6 +173,14 @@ struct WatchedMoviesView: View {
             // Refresh data when the add movie sheet is dismissed
             if !newValue {
                 viewModel?.refreshData()
+            }
+        }
+        .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
+            if let viewModel = viewModel {
+                if showingAddMovie != viewModel.isShowingAddMovie {
+                    print("Syncing showingAddMovie: \(viewModel.isShowingAddMovie)")
+                    showingAddMovie = viewModel.isShowingAddMovie
+                }
             }
         }
     }
