@@ -67,30 +67,24 @@ struct AddEditMovieView: View {
                     
                     Picker("Location Type", selection: $locationType) {
                         ForEach(LocationType.allCases, id: \.self) { type in
-                            HStack {
-                                Text(type.icon)
-                                Text(type.displayName)
-                            }.tag(type)
+                            Text("\(type.icon) \(type.displayName)").tag(type)
                         }
                     }
+                    .pickerStyle(MenuPickerStyle())
                     
                     Picker("Time of Day", selection: $timeOfDay) {
                         ForEach(TimeOfDay.allCases, id: \.self) { time in
-                            HStack {
-                                Text(time.icon)
-                                Text(time.displayName)
-                            }.tag(time)
+                            Text("\(time.icon) \(time.displayName)").tag(time)
                         }
                     }
+                    .pickerStyle(MenuPickerStyle())
                     
                     Picker("Language", selection: $language) {
                         ForEach(Language.allCases, id: \.self) { lang in
-                            HStack {
-                                Text(lang.flag)
-                                Text(lang.displayName)
-                            }.tag(lang)
+                            Text("\(lang.icon) \(lang.displayName)").tag(lang)
                         }
                     }
+                    .pickerStyle(MenuPickerStyle())
                 }
                 
                 Section("Optional Information") {

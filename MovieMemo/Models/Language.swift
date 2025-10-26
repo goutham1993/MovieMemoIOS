@@ -51,5 +51,9 @@ enum Language: String, CaseIterable, Codable {
         case .other: return "🌍"
         }
     }
+    
+    var icon: String {
+        return flag
+    }
 }
 
