@@ -111,24 +111,33 @@ struct AddEditMovieView: View {
                 }
                 
                 Section("Optional Information") {
-                    HStack {
-                        Text("Rating")
-                        Spacer()
-                        HStack(spacing: 4) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
                             ForEach(1...10, id: \.self) { star in
                                 Button(action: {
                                     rating = star
                                 }) {
                                     Image(systemName: star <= (rating ?? 0) ? "star.fill" : "star")
                                         .foregroundColor(.yellow)
+                                        .font(.title2)
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
-                        Button("Clear") {
-                            rating = nil
+                        
+                        HStack {
+                            if rating != nil {
+                                Text("\(rating!)/10")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Button("Clear Rating") {
+                                rating = nil
+                            }
+                            .font(.caption)
+                            .foregroundColor(.red)
                         }
-                        .font(.caption)
-                        .foregroundColor(.red)
                     }
                     
                     TextField("Genre", text: $genre)
