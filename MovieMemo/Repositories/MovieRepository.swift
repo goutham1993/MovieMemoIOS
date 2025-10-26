@@ -68,7 +68,6 @@ class MovieRepository: ObservableObject {
     func getAllWatchlistItems() -> [WatchlistItem] {
         let descriptor = FetchDescriptor<WatchlistItem>(
             sortBy: [
-                SortDescriptor(\.priority, order: .forward),
                 SortDescriptor(\.createdAt, order: .reverse)
             ]
         )

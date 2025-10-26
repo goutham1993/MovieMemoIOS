@@ -14,7 +14,6 @@ struct AddEditWatchlistItemView: View {
     
     @State private var title: String = ""
     @State private var notes: String = ""
-    @State private var priority: Int = 2 // Default to Medium
     @State private var targetDate: Date? = nil
     @State private var language: Language = .english
     @State private var hasTargetDate = false
@@ -43,12 +42,6 @@ struct AddEditWatchlistItemView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .lineLimit(3...6)
                     
-                    Picker("Priority", selection: $priority) {
-                        Text("High").tag(1)
-                        Text("Medium").tag(2)
-                        Text("Low").tag(3)
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
                     
                     Toggle("Set Target Date", isOn: $hasTargetDate)
                     
@@ -87,7 +80,6 @@ struct AddEditWatchlistItemView: View {
     private func loadItemData(_ item: WatchlistItem) {
         title = item.title
         notes = item.notes ?? ""
-        priority = item.priority
         targetDate = item.targetDate
         language = item.languageEnum
         hasTargetDate = item.targetDate != nil
@@ -97,7 +89,7 @@ struct AddEditWatchlistItemView: View {
         let newItem = WatchlistItem(
             title: title,
             notes: notes.isEmpty ? nil : notes,
-            priority: priority,
+            priority: 2, // Default to Medium priority
             targetDate: hasTargetDate ? targetDate : nil,
             language: language
         )

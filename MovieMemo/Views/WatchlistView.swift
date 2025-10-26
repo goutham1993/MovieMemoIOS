@@ -155,13 +155,6 @@ struct WatchlistItemRowView: View {
                             .foregroundColor(.secondary)
                         
                         Spacer()
-                        
-                        HStack {
-                            Text(item.priorityIcon)
-                            Text(item.priorityDisplayName)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
                     }
                 }
                 
