@@ -42,6 +42,10 @@ struct MainTabView: View {
                 .tag(3)
         }
         .accentColor(.blue)
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToWatchlist"))) { _ in
+            // Switch to watchlist tab when notification is tapped
+            selectedTab = 1
+        }
     }
 }
 

@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var showingSuccessAlert = false
     @State private var successMessage = ""
     @State private var exportData: Data?
+    @State private var notificationsEnabled = false
     
     private var exportFileURL: URL? {
         guard let data = exportData else { return nil }
@@ -37,6 +38,35 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             List {
+                Section("Notifications") {
+                    Toggle("Weekend Watchlist Reminders", isOn: $notificationsEnabled)
+                        .onChange(of: notificationsEnabled) { _, newValue in
+                            if newValue {
+                                NotificationManager.shared.requestAuthorization { granted in
+                                    if granted {
+                                        NotificationManager.shared.scheduleWeekendReminder()
+                                        successMessage = "Weekend reminders enabled! You'll get notified every Saturday at 10:00 AM."
+                                        showingSuccessAlert = true
+                                    } else {
+                                        notificationsEnabled = false
+                                        successMessage = "Please enable notifications in Settings to receive reminders."
+                                        showingSuccessAlert = true
+                                    }
+                                }
+                            } else {
+                                NotificationManager.shared.cancelAllNotifications()
+                                successMessage = "Weekend reminders disabled."
+                                showingSuccessAlert = true
+                            }
+                        }
+                    
+                    if notificationsEnabled {
+                        Text("You'll receive a reminder every Saturday at 10:00 AM")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
                 Section("Data Management") {
                     Button("Export Data") {
                         exportData = repository?.exportData()
@@ -145,6 +175,11 @@ struct SettingsView: View {
             // Initialize repository with the environment's modelContext
             if repository == nil {
                 repository = MovieRepository(modelContext: modelContext)
+            }
+            
+            // Check notification authorization status
+            NotificationManager.shared.checkAuthorizationStatus { isAuthorized in
+                notificationsEnabled = isAuthorized
             }
         }
     }

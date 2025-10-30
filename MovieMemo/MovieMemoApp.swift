@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct MovieMemoApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             WatchedEntry.self,
