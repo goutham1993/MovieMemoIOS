@@ -184,16 +184,9 @@ struct AddEditMovieView: View {
                             .foregroundColor(.secondary)
                     }
                     
-                    TextField("Location Notes", text: $locationNotes, axis: .vertical)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .lineLimit(3...6)
-                    
                     TextField("Notes", text: $notes, axis: .vertical)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .lineLimit(3...6)
-                    
-                    TextField("Poster URI", text: $posterUri)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
                 
             }
