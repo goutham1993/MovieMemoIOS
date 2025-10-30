@@ -29,8 +29,6 @@ struct AddEditMovieView: View {
     @State private var city: String = ""
     @State private var peopleCountText: String = ""
     
-    @State private var showingDatePicker = false
-    
     private var isEditing: Bool {
         entry != nil
     }
@@ -57,19 +55,8 @@ struct AddEditMovieView: View {
                     TextField("Movie Title", text: $title)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     
-                    HStack {
-                        Text("Watch Date")
-                        Spacer()
-                        Button(action: { showingDatePicker.toggle() }) {
-                            Text(DateFormatter.isoDateFormatter.string(from: watchedDate))
-                                .foregroundColor(.blue)
-                        }
-                    }
-                    .sheet(isPresented: $showingDatePicker) {
-                        DatePicker("Watch Date", selection: $watchedDate, displayedComponents: .date)
-                            .datePickerStyle(GraphicalDatePickerStyle())
-                            .padding()
-                    }
+                    DatePicker("Watch Date", selection: $watchedDate, displayedComponents: .date)
+                        .datePickerStyle(.compact)
                     
                     Picker("Location Type", selection: $locationType) {
                         ForEach(LocationType.allCases, id: \.self) { type in
