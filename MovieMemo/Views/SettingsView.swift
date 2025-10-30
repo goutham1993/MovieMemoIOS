@@ -20,6 +20,12 @@ struct SettingsView: View {
     @State private var successMessage = ""
     @State private var exportData: Data?
     @State private var notificationsEnabled = false
+    @State private var notificationTime: Date = {
+        var components = DateComponents()
+        components.hour = 10
+        components.minute = 0
+        return Calendar.current.date(from: components) ?? Date()
+    }()
     
     private var exportFileURL: URL? {
         guard let data = exportData else { return nil }
@@ -44,8 +50,10 @@ struct SettingsView: View {
                             if newValue {
                                 NotificationManager.shared.requestAuthorization { granted in
                                     if granted {
-                                        NotificationManager.shared.scheduleWeekendReminder()
-                                        successMessage = "Weekend reminders enabled! You'll get notified every Saturday at 10:00 AM."
+                                        NotificationManager.shared.scheduleWeekendReminder(at: notificationTime)
+                                        let formatter = DateFormatter()
+                                        formatter.timeStyle = .short
+                                        successMessage = "Weekend reminders enabled! You'll get notified every Saturday at \(formatter.string(from: notificationTime))."
                                         showingSuccessAlert = true
                                     } else {
                                         notificationsEnabled = false
@@ -61,7 +69,17 @@ struct SettingsView: View {
                         }
                     
                     if notificationsEnabled {
-                        Text("You'll receive a reminder every Saturday at 10:00 AM")
+                        DatePicker("Reminder Time", selection: $notificationTime, displayedComponents: .hourAndMinute)
+                            .onChange(of: notificationTime) { _, newTime in
+                                // Update the notification schedule when time changes
+                                NotificationManager.shared.scheduleWeekendReminder(at: newTime)
+                                let formatter = DateFormatter()
+                                formatter.timeStyle = .short
+                                successMessage = "Reminder time updated to \(formatter.string(from: newTime))"
+                                showingSuccessAlert = true
+                            }
+                        
+                        Text("You'll receive a reminder every Saturday")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

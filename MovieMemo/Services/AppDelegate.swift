@@ -14,10 +14,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // Set notification delegate
         UNUserNotificationCenter.current().delegate = self
         
-        // Request notification permission and schedule
+        // Request notification permission and schedule with default time
         NotificationManager.shared.requestAuthorization { granted in
             if granted {
-                NotificationManager.shared.scheduleWeekendReminder()
+                // Default to 10:00 AM
+                var components = DateComponents()
+                components.hour = 10
+                components.minute = 0
+                let defaultTime = Calendar.current.date(from: components) ?? Date()
+                NotificationManager.shared.scheduleWeekendReminder(at: defaultTime)
             }
         }
         

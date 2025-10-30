@@ -25,8 +25,8 @@ class NotificationManager {
         }
     }
     
-    // Schedule weekend watchlist reminder
-    func scheduleWeekendReminder() {
+    // Schedule weekend watchlist reminder with custom time
+    func scheduleWeekendReminder(at time: Date) {
         // Remove any existing weekend reminders
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["weekend-watchlist-reminder"])
         
@@ -37,11 +37,16 @@ class NotificationManager {
         content.categoryIdentifier = "WATCHLIST_REMINDER"
         content.userInfo = ["targetTab": "watchlist"] // To open watchlist tab
         
-        // Schedule for Saturday at 10:00 AM
+        // Extract hour and minute from the provided time
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: time)
+        let minute = calendar.component(.minute, from: time)
+        
+        // Schedule for Saturday at the specified time
         var dateComponents = DateComponents()
         dateComponents.weekday = 7 // Saturday (1 = Sunday, 7 = Saturday)
-        dateComponents.hour = 10
-        dateComponents.minute = 0
+        dateComponents.hour = hour
+        dateComponents.minute = minute
         
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         
@@ -55,7 +60,9 @@ class NotificationManager {
             if let error = error {
                 print("Error scheduling weekend reminder: \(error)")
             } else {
-                print("Weekend reminder scheduled successfully for Saturdays at 10:00 AM")
+                let formatter = DateFormatter()
+                formatter.timeStyle = .short
+                print("Weekend reminder scheduled successfully for Saturdays at \(formatter.string(from: time))")
             }
         }
     }
