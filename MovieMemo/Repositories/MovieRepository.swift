@@ -260,7 +260,7 @@ struct ExportData: Codable {
     let watchlistItems: [WatchlistItemData]
     let genres: [GenreData]
     let exportDate: Date
-    let version: String = "1.1" // Updated for peopleCount field
+    let version: String = "1.2" // Updated for watchlist genre and whereToWatch fields
 }
 
 // MARK: - Codable Data Structures for Export/Import
@@ -339,6 +339,8 @@ struct WatchlistItemData: Codable {
     let createdAt: Date
     let targetDate: Date?
     let language: String
+    let genre: String? // Optional for backward compatibility
+    let whereToWatch: String? // Optional for backward compatibility
     
     init(from watchlistItem: WatchlistItem) {
         self.id = watchlistItem.id
@@ -348,6 +350,8 @@ struct WatchlistItemData: Codable {
         self.createdAt = watchlistItem.createdAt
         self.targetDate = watchlistItem.targetDate
         self.language = watchlistItem.language
+        self.genre = watchlistItem.genre
+        self.whereToWatch = watchlistItem.whereToWatch
     }
     
     func toWatchlistItem() -> WatchlistItem {
@@ -356,7 +360,9 @@ struct WatchlistItemData: Codable {
             notes: notes,
             priority: priority,
             targetDate: targetDate,
-            language: Language(rawValue: language) ?? .english
+            language: Language(rawValue: language) ?? .english,
+            genre: genre, // Will be nil for old exports, preserving backward compatibility
+            whereToWatch: whereToWatch // Will be nil for old exports, preserving backward compatibility
         )
         item.id = id
         item.createdAt = createdAt

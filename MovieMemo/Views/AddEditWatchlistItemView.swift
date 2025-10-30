@@ -17,6 +17,8 @@ struct AddEditWatchlistItemView: View {
     @State private var targetDate: Date? = nil
     @State private var language: Language = .english
     @State private var hasTargetDate = false
+    @State private var genre: String = ""
+    @State private var whereToWatch: WhereToWatch?
     
     private var isEditing: Bool {
         item != nil
@@ -38,10 +40,20 @@ struct AddEditWatchlistItemView: View {
                 }
                 
                 Section("Optional Information") {
+                    TextField("Genre", text: $genre)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    Picker("Where to Watch", selection: $whereToWatch) {
+                        Text("Not specified").tag(nil as WhereToWatch?)
+                        ForEach(WhereToWatch.allCases, id: \.self) { option in
+                            Text("\(option.icon) \(option.displayName)").tag(option as WhereToWatch?)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    
                     TextField("Notes", text: $notes, axis: .vertical)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .lineLimit(3...6)
-                    
                     
                     Toggle("Set Release Date", isOn: $hasTargetDate)
                     
@@ -83,6 +95,8 @@ struct AddEditWatchlistItemView: View {
         targetDate = item.targetDate
         language = item.languageEnum
         hasTargetDate = item.targetDate != nil
+        genre = item.genre ?? ""
+        whereToWatch = item.whereToWatch != nil ? WhereToWatch(rawValue: item.whereToWatch!) : nil
     }
     
     private func saveItem() {
@@ -91,7 +105,9 @@ struct AddEditWatchlistItemView: View {
             notes: notes.isEmpty ? nil : notes,
             priority: 2, // Default to Medium priority
             targetDate: hasTargetDate ? targetDate : nil,
-            language: language
+            language: language,
+            genre: genre.isEmpty ? nil : genre,
+            whereToWatch: whereToWatch?.rawValue
         )
         
         onSave(newItem)

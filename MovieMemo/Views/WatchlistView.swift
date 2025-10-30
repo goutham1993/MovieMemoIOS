@@ -171,6 +171,31 @@ struct WatchlistItemRowView: View {
                 }
             }
             
+            // Genre and Where to Watch on same row
+            HStack(spacing: 12) {
+                if let genre = item.genre, !genre.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "film")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Text(genre)
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
+                
+                if let whereToWatch = item.whereToWatch, 
+                   let whereOption = WhereToWatch(rawValue: whereToWatch) {
+                    HStack(spacing: 4) {
+                        Text(whereOption.icon)
+                            .font(.caption)
+                        Text(whereOption.displayName)
+                            .font(.caption)
+                            .foregroundColor(.purple)
+                    }
+                }
+            }
+            
             if let notes = item.notes, !notes.isEmpty {
                 Text(notes)
                     .font(.subheadline)

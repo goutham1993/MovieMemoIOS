@@ -17,13 +17,17 @@ final class WatchlistItem {
     var createdAt: Date
     var targetDate: Date?
     var language: String // Language raw value
+    var genre: String? // Movie genre
+    var whereToWatch: String? // Theater, OTT, or Both
     
     init(
         title: String,
         notes: String? = nil,
         priority: Int = 2, // Default to Medium
         targetDate: Date? = nil,
-        language: Language
+        language: Language,
+        genre: String? = nil,
+        whereToWatch: String? = nil
     ) {
         self.id = UUID()
         self.title = title
@@ -32,6 +36,8 @@ final class WatchlistItem {
         self.createdAt = Date()
         self.targetDate = targetDate
         self.language = language.rawValue
+        self.genre = genre
+        self.whereToWatch = whereToWatch
     }
     
     // Computed properties
@@ -55,6 +61,26 @@ final class WatchlistItem {
         case 2: return "🟡"
         case 3: return "🟢"
         default: return "🟡"
+        }
+    }
+}
+
+// MARK: - Where to Watch Options
+enum WhereToWatch: String, CaseIterable, Codable {
+    case theater = "THEATER"
+    case ott = "OTT"
+    
+    var displayName: String {
+        switch self {
+        case .theater: return "Theater"
+        case .ott: return "OTT/Streaming"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .theater: return "🎭"
+        case .ott: return "📺"
         }
     }
 }
