@@ -183,7 +183,7 @@ struct WatchlistItemRowView: View {
                     Image(systemName: "calendar")
                         .font(.caption)
                         .foregroundColor(.blue)
-                    Text("Target: \(targetDate, style: .date)")
+                    Text("Release: \(targetDate, style: .date)")
                         .font(.caption)
                         .foregroundColor(.blue)
                 }

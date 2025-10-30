@@ -43,10 +43,10 @@ struct AddEditWatchlistItemView: View {
                         .lineLimit(3...6)
                     
                     
-                    Toggle("Set Target Date", isOn: $hasTargetDate)
+                    Toggle("Set Release Date", isOn: $hasTargetDate)
                     
                     if hasTargetDate {
-                        DatePicker("Target Date", selection: Binding(
+                        DatePicker("Release Date", selection: Binding(
                             get: { targetDate ?? Date() },
                             set: { targetDate = $0 }
                         ), displayedComponents: .date)
