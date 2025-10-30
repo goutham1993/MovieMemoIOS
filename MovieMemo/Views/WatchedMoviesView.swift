@@ -206,6 +206,10 @@ struct WatchedMoviesView: View {
                 Text("Are you sure you want to delete this movie? This action cannot be undone.")
             }
         }
+        .onAppear {
+            // Refresh data whenever the view appears
+            refreshTrigger += 1
+        }
     }
 }
 

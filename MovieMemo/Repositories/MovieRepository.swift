@@ -118,6 +118,25 @@ class MovieRepository: ObservableObject {
     }
     
     func updateWatchlistItem(_ item: WatchlistItem) {
+        // Find the existing item by ID
+        let itemId = item.id
+        let descriptor = FetchDescriptor<WatchlistItem>(
+            predicate: #Predicate<WatchlistItem> { watchlistItem in
+                watchlistItem.id == itemId
+            }
+        )
+        
+        if let existingItem = try? modelContext.fetch(descriptor).first {
+            // Update the existing item with new values
+            existingItem.title = item.title
+            existingItem.notes = item.notes
+            existingItem.priority = item.priority
+            existingItem.targetDate = item.targetDate
+            existingItem.language = item.language
+            existingItem.genre = item.genre
+            existingItem.whereToWatch = item.whereToWatch
+        }
+        
         try? modelContext.save()
     }
     

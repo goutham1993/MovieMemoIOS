@@ -110,6 +110,12 @@ struct AddEditWatchlistItemView: View {
             whereToWatch: whereToWatch?.rawValue
         )
         
+        // If editing, preserve the original ID and createdAt
+        if let originalItem = item {
+            newItem.id = originalItem.id
+            newItem.createdAt = originalItem.createdAt
+        }
+        
         onSave(newItem)
     }
 }

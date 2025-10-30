@@ -10,19 +10,27 @@ import SwiftData
 
 struct WatchlistView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var viewModel: WatchlistViewModel?
+    @State private var searchText = ""
     @State private var showingDeleteAlert = false
     @State private var itemToDelete: WatchlistItem?
     @State private var showingAddItem = false
+    @State private var editingItem: WatchlistItem?
+    @State private var refreshTrigger = 0
     
-    // Computed properties for bindings
-    private var searchTextBinding: Binding<String> {
-        Binding(
-            get: { viewModel?.searchText ?? "" },
-            set: { viewModel?.searchText = $0 }
-        )
+    private var filteredItems: [WatchlistItem] {
+        let _ = refreshTrigger // Force recalculation when this changes
+        let repository = MovieRepository(modelContext: modelContext)
+        let allItems = repository.getAllWatchlistItems()
+        
+        if searchText.isEmpty {
+            return allItems
+        } else {
+            return allItems.filter { item in
+                item.title.localizedCaseInsensitiveContains(searchText) ||
+                (item.notes?.localizedCaseInsensitiveContains(searchText) ?? false)
+            }
+        }
     }
-    
     
     var body: some View {
         NavigationView {
@@ -31,21 +39,21 @@ struct WatchlistView: View {
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
-                    TextField("Search watchlist...", text: searchTextBinding)
+                    TextField("Search watchlist...", text: $searchText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
                 .padding(.horizontal)
                 
                 // Watchlist Items
-                if viewModel?.filteredItems.isEmpty == true {
+                if filteredItems.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "list.bullet")
                             .font(.system(size: 50))
                             .foregroundColor(.gray)
-                        Text((viewModel?.searchText.isEmpty == true) ? "Your watchlist is empty" : "No items found")
+                        Text(searchText.isEmpty ? "Your watchlist is empty" : "No items found")
                             .font(.headline)
                             .foregroundColor(.gray)
-                        if viewModel?.searchText.isEmpty == true {
+                        if searchText.isEmpty {
                             Text("Tap the + button to add movies to your watchlist!")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
@@ -54,17 +62,20 @@ struct WatchlistView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
-                        ForEach(viewModel?.filteredItems ?? [], id: \.id) { item in
+                        ForEach(filteredItems, id: \.id) { item in
                             WatchlistItemRowView(item: item)
+                                .contentShape(Rectangle())
                                 .onTapGesture {
-                                    viewModel?.editItem(item)
+                                    editingItem = item
+                                    showingAddItem = true
                                 }
                                 .contextMenu {
                                     Button("Edit") {
-                                        viewModel?.editItem(item)
+                                        editingItem = item
+                                        showingAddItem = true
                                     }
-                                    Button("Move to Watched") {
-                                        viewModel?.moveToWatched(item)
+                                    Button("Mark as Complete") {
+                                        moveToWatched(item)
                                     }
                                     Button("Delete", role: .destructive) {
                                         itemToDelete = item
@@ -81,9 +92,7 @@ struct WatchlistView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        if viewModel == nil {
-                            viewModel = WatchlistViewModel(repository: MovieRepository(modelContext: modelContext))
-                        }
+                        editingItem = nil
                         showingAddItem = true
                     }) {
                         Image(systemName: "plus")
@@ -92,22 +101,20 @@ struct WatchlistView: View {
             }
             .sheet(isPresented: $showingAddItem) {
                 AddEditWatchlistItemView(
-                    item: viewModel?.editingItem,
+                    item: editingItem,
                     onSave: { item in
-                        if viewModel?.editingItem != nil {
-                            viewModel?.updateItem(item)
+                        let repository = MovieRepository(modelContext: modelContext)
+                        if editingItem != nil {
+                            repository.updateWatchlistItem(item)
                         } else {
-                            viewModel?.addItem(item)
+                            repository.addWatchlistItem(item)
                         }
-                        viewModel?.editingItem = nil
+                        editingItem = nil
                         showingAddItem = false
-                        // Force refresh the UI
-                        DispatchQueue.main.async {
-                            viewModel?.refreshData()
-                        }
+                        refreshTrigger += 1 // Trigger UI refresh
                     },
                     onCancel: {
-                        viewModel?.editingItem = nil
+                        editingItem = nil
                         showingAddItem = false
                     }
                 )
@@ -116,7 +123,9 @@ struct WatchlistView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
                     if let item = itemToDelete {
-                        viewModel?.deleteItem(item)
+                        let repository = MovieRepository(modelContext: modelContext)
+                        repository.deleteWatchlistItem(item)
+                        refreshTrigger += 1 // Trigger UI refresh
                     }
                 }
             } message: {
@@ -124,16 +133,15 @@ struct WatchlistView: View {
             }
         }
         .onAppear {
-            if viewModel == nil {
-                viewModel = WatchlistViewModel(repository: MovieRepository(modelContext: modelContext))
-            }
+            // Refresh data whenever the view appears
+            refreshTrigger += 1
         }
-        .onChange(of: showingAddItem) { _, newValue in
-            // Refresh data when the add item sheet is dismissed
-            if !newValue {
-                viewModel?.refreshData()
-            }
-        }
+    }
+    
+    private func moveToWatched(_ item: WatchlistItem) {
+        let repository = MovieRepository(modelContext: modelContext)
+        _ = repository.moveToWatched(item)
+        refreshTrigger += 1 // Trigger UI refresh
     }
 }
 
