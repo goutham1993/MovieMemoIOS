@@ -41,17 +41,47 @@ struct WatchedMoviesView: View {
         // Apply sorting
         switch sortOption {
         case .dateNewest:
-            return entries.sorted { $0.watchedDate > $1.watchedDate }
+            return entries.sorted { 
+                if $0.watchedDate == $1.watchedDate {
+                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
+                }
+                return $0.watchedDate > $1.watchedDate
+            }
         case .dateOldest:
-            return entries.sorted { $0.watchedDate < $1.watchedDate }
+            return entries.sorted { 
+                if $0.watchedDate == $1.watchedDate {
+                    return $0.createdAt < $1.createdAt // Secondary sort by creation time
+                }
+                return $0.watchedDate < $1.watchedDate
+            }
         case .ratingHighest:
-            return entries.sorted { ($0.rating ?? 0) > ($1.rating ?? 0) }
+            return entries.sorted { 
+                if ($0.rating ?? 0) == ($1.rating ?? 0) {
+                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
+                }
+                return ($0.rating ?? 0) > ($1.rating ?? 0)
+            }
         case .ratingLowest:
-            return entries.sorted { ($0.rating ?? 0) < ($1.rating ?? 0) }
+            return entries.sorted { 
+                if ($0.rating ?? 0) == ($1.rating ?? 0) {
+                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
+                }
+                return ($0.rating ?? 0) < ($1.rating ?? 0)
+            }
         case .amountHighest:
-            return entries.sorted { ($0.spendCents ?? 0) > ($1.spendCents ?? 0) }
+            return entries.sorted { 
+                if ($0.spendCents ?? 0) == ($1.spendCents ?? 0) {
+                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
+                }
+                return ($0.spendCents ?? 0) > ($1.spendCents ?? 0)
+            }
         case .amountLowest:
-            return entries.sorted { ($0.spendCents ?? 0) < ($1.spendCents ?? 0) }
+            return entries.sorted { 
+                if ($0.spendCents ?? 0) == ($1.spendCents ?? 0) {
+                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
+                }
+                return ($0.spendCents ?? 0) < ($1.spendCents ?? 0)
+            }
         }
     }
     
