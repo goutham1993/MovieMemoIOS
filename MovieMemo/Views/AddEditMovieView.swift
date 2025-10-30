@@ -27,6 +27,7 @@ struct AddEditMovieView: View {
     @State private var language: Language = .english
     @State private var theaterName: String = ""
     @State private var city: String = ""
+    @State private var peopleCountText: String = ""
     
     @State private var showingDatePicker = false
     
@@ -42,6 +43,11 @@ struct AddEditMovieView: View {
     private var durationMinutes: Int? {
         guard let minutes = Int(durationMin), minutes > 0 else { return nil }
         return minutes
+    }
+    
+    private var peopleCount: Int? {
+        guard let count = Int(peopleCountText), count > 0 else { return nil }
+        return count
     }
     
     var body: some View {
@@ -84,6 +90,16 @@ struct AddEditMovieView: View {
                             
                             TextField("City", text: $city)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
+                            
+                            HStack {
+                                Text("How many people?")
+                                Spacer()
+                                TextField("0", text: $peopleCountText)
+                                    .keyboardType(.numberPad)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 80)
+                                    .multilineTextAlignment(.trailing)
+                            }
                         }
                         .padding(.vertical, 8)
                         .padding(.horizontal, 12)
@@ -221,6 +237,7 @@ struct AddEditMovieView: View {
         language = entry.languageEnum
         theaterName = entry.theaterName ?? ""
         city = entry.city ?? ""
+        peopleCountText = entry.peopleCount != nil ? String(entry.peopleCount!) : ""
     }
     
     private func saveMovie() {
@@ -242,7 +259,8 @@ struct AddEditMovieView: View {
                 posterUri: posterUri.isEmpty ? nil : posterUri,
                 language: language,
                 theaterName: theaterName.isEmpty ? nil : theaterName,
-                city: city.isEmpty ? nil : city
+                city: city.isEmpty ? nil : city,
+                peopleCount: locationType == .theater ? peopleCount : nil
             )
             // Preserve the original ID and createdAt
             newEntry.id = originalEntry.id
@@ -264,7 +282,8 @@ struct AddEditMovieView: View {
                 posterUri: posterUri.isEmpty ? nil : posterUri,
                 language: language,
                 theaterName: theaterName.isEmpty ? nil : theaterName,
-                city: city.isEmpty ? nil : city
+                city: city.isEmpty ? nil : city,
+                peopleCount: locationType == .theater ? peopleCount : nil
             )
         }
         

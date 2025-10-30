@@ -357,11 +357,26 @@ struct WatchedMovieRowView: View {
     
     private func getLocationText() -> String {
         if entry.locationTypeEnum == .theater {
+            var parts: [String] = []
+            
+            // Add theater name or default
             if let theaterName = entry.theaterName, !theaterName.isEmpty {
-                return "\(theaterName)\(entry.city != nil ? ", \(entry.city!)" : "")"
+                parts.append(theaterName)
             } else {
-                return "Theater"
+                parts.append("Theater")
             }
+            
+            // Add city if available
+            if let city = entry.city, !city.isEmpty {
+                parts.append(city)
+            }
+            
+            // Add people count if available
+            if let peopleCount = entry.peopleCount, peopleCount > 0 {
+                parts.append("(\(peopleCount) \(peopleCount == 1 ? "person" : "people"))")
+            }
+            
+            return parts.joined(separator: ", ")
         } else {
             return entry.locationTypeEnum.displayName
         }

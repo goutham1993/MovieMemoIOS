@@ -26,6 +26,7 @@ final class WatchedEntry {
     var language: String // Language raw value
     var theaterName: String?
     var city: String?
+    var peopleCount: Int? // Number of people at theater
     var createdAt: Date
     
     init(
@@ -43,7 +44,8 @@ final class WatchedEntry {
         posterUri: String? = nil,
         language: Language,
         theaterName: String? = nil,
-        city: String? = nil
+        city: String? = nil,
+        peopleCount: Int? = nil
     ) {
         self.id = UUID()
         self.title = title
@@ -61,6 +63,7 @@ final class WatchedEntry {
         self.language = language.rawValue
         self.theaterName = theaterName
         self.city = city
+        self.peopleCount = peopleCount
         self.createdAt = Date()
     }
     

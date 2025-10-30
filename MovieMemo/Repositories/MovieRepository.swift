@@ -80,6 +80,7 @@ class MovieRepository: ObservableObject {
             existingEntry.language = entry.language
             existingEntry.theaterName = entry.theaterName
             existingEntry.city = entry.city
+            existingEntry.peopleCount = entry.peopleCount
         }
         
         try? modelContext.save()
@@ -259,7 +260,7 @@ struct ExportData: Codable {
     let watchlistItems: [WatchlistItemData]
     let genres: [GenreData]
     let exportDate: Date
-    let version: String = "1.0"
+    let version: String = "1.1" // Updated for peopleCount field
 }
 
 // MARK: - Codable Data Structures for Export/Import
@@ -281,6 +282,7 @@ struct WatchedEntryData: Codable {
     let language: String
     let theaterName: String?
     let city: String?
+    let peopleCount: Int? // Optional for backward compatibility
     let createdAt: Date
     
     init(from watchedEntry: WatchedEntry) {
@@ -300,6 +302,7 @@ struct WatchedEntryData: Codable {
         self.language = watchedEntry.language
         self.theaterName = watchedEntry.theaterName
         self.city = watchedEntry.city
+        self.peopleCount = watchedEntry.peopleCount
         self.createdAt = watchedEntry.createdAt
     }
     
@@ -319,7 +322,8 @@ struct WatchedEntryData: Codable {
             posterUri: posterUri,
             language: Language(rawValue: language) ?? .english,
             theaterName: theaterName,
-            city: city
+            city: city,
+            peopleCount: peopleCount // Will be nil for old exports, preserving backward compatibility
         )
         entry.id = id
         entry.createdAt = createdAt
