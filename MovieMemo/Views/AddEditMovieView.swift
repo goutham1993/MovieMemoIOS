@@ -184,7 +184,7 @@ struct AddEditMovieView: View {
                             .foregroundColor(.secondary)
                     }
                     
-                    TextField("Notes", text: $notes, axis: .vertical)
+                    TextField("Notes or your review", text: $notes, axis: .vertical)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .lineLimit(3...6)
                 }
