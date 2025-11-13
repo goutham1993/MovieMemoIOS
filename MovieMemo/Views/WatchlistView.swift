@@ -11,6 +11,7 @@ import SwiftData
 struct WatchlistView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var searchText = ""
+    @State private var selectedFilter: WatchlistFilter = .all
     @State private var showingDeleteAlert = false
     @State private var itemToDelete: WatchlistItem?
     @State private var showingAddItem = false
@@ -20,27 +21,61 @@ struct WatchlistView: View {
     private var filteredItems: [WatchlistItem] {
         let _ = refreshTrigger // Force recalculation when this changes
         let repository = MovieRepository(modelContext: modelContext)
-        let allItems = repository.getAllWatchlistItems()
+        var allItems = repository.getAllWatchlistItems()
         
-        if searchText.isEmpty {
-            return allItems
-        } else {
-            return allItems.filter { item in
+        // Apply filter
+        switch selectedFilter {
+        case .all:
+            break // Show all items
+        case .ott:
+            allItems = allItems.filter { item in
+                guard let whereToWatch = item.whereToWatch,
+                      let whereOption = WhereToWatch(rawValue: whereToWatch) else {
+                    return false
+                }
+                return whereOption == .ott
+            }
+        case .theater:
+            allItems = allItems.filter { item in
+                guard let whereToWatch = item.whereToWatch,
+                      let whereOption = WhereToWatch(rawValue: whereToWatch) else {
+                    return false
+                }
+                return whereOption == .theater
+            }
+        }
+        
+        // Apply search filter
+        if !searchText.isEmpty {
+            allItems = allItems.filter { item in
                 item.title.localizedCaseInsensitiveContains(searchText) ||
                 (item.notes?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
+        
+        return allItems
     }
     
     var body: some View {
         NavigationView {
             VStack {
-                // Search Bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
-                    TextField("Search watchlist...", text: $searchText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                // Search and Filter Bar
+                VStack(spacing: 12) {
+                    // Search Bar
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+                        TextField("Search watchlist...", text: $searchText)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    
+                    // Filter Picker
+                    Picker("Filter", selection: $selectedFilter) {
+                        ForEach(WatchlistFilter.allCases, id: \.self) { filter in
+                            Text(filter.displayName).tag(filter)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
                 }
                 .padding(.horizontal)
                 
@@ -148,6 +183,23 @@ struct WatchlistView: View {
 struct WatchlistItemRowView: View {
     let item: WatchlistItem
     
+    private var daysToRelease: Int? {
+        guard let targetDate = item.targetDate else { return nil }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let releaseDate = calendar.startOfDay(for: targetDate)
+        let components = calendar.dateComponents([.day], from: today, to: releaseDate)
+        return components.day
+    }
+    
+    private var isOTTMovie: Bool {
+        guard let whereToWatch = item.whereToWatch,
+              let whereOption = WhereToWatch(rawValue: whereToWatch) else {
+            return false
+        }
+        return whereOption == .ott
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -168,14 +220,30 @@ struct WatchlistItemRowView: View {
                 
                 Spacer()
                 
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Added")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Text(item.createdAt, style: .date)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                // Show days to release or "Available to watch now"
+                if let days = daysToRelease {
+                    if days > 0 {
+                        // Future date - show days to release
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("\(days)")
+                                .font(.headline)
+                                .foregroundColor(.blue)
+                            Text(days == 1 ? "day" : "days")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else if days <= 0 && isOTTMovie {
+                        // Past or today's date for OTT - show "Available to watch now"
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("Available")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.green)
+                            Text("to watch now")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                        }
+                    }
                 }
             }
             
@@ -223,6 +291,17 @@ struct WatchlistItemRowView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Watchlist Filter
+enum WatchlistFilter: String, CaseIterable {
+    case all = "All"
+    case ott = "OTT"
+    case theater = "Theater"
+    
+    var displayName: String {
+        return self.rawValue
     }
 }
 

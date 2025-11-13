@@ -69,11 +69,13 @@ final class WatchlistItem {
 enum WhereToWatch: String, CaseIterable, Codable {
     case theater = "THEATER"
     case ott = "OTT"
+    case other = "OTHER"
     
     var displayName: String {
         switch self {
         case .theater: return "Theater"
         case .ott: return "OTT/Streaming"
+        case .other: return "Other"
         }
     }
     
@@ -81,6 +83,7 @@ enum WhereToWatch: String, CaseIterable, Codable {
         switch self {
         case .theater: return "🎭"
         case .ott: return "📺"
+        case .other: return "📍"
         }
     }
 }
