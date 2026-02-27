@@ -16,8 +16,7 @@ struct WatchedMoviesView: View {
     @State private var sortOption: SortOption = .dateNewest
     @State private var showingDeleteAlert = false
     @State private var entryToDelete: WatchedEntry?
-    @State private var showingAddMovie = false
-    @State private var editingEntry: WatchedEntry?
+    @State private var movieSheetConfig: MovieSheetConfig? = nil
     @State private var refreshTrigger = 0
 
     // Deep-link filter from Insights
@@ -234,13 +233,11 @@ struct WatchedMoviesView: View {
                     ForEach(filteredEntries, id: \.id) { entry in
                         WatchedMovieRowView(entry: entry)
                             .onTapGesture {
-                                editingEntry = entry
-                                showingAddMovie = true
+                                movieSheetConfig = MovieSheetConfig(entry: entry)
                             }
                             .contextMenu {
                                 Button("Edit") {
-                                    editingEntry = entry
-                                    showingAddMovie = true
+                                    movieSheetConfig = MovieSheetConfig(entry: entry)
                                 }
                                 Button("Delete", role: .destructive) {
                                     entryToDelete = entry
@@ -255,8 +252,7 @@ struct WatchedMoviesView: View {
                                     Label("Delete", systemImage: "trash")
                                 }
                                 Button {
-                                    editingEntry = entry
-                                    showingAddMovie = true
+                                    movieSheetConfig = MovieSheetConfig(entry: entry)
                                 } label: {
                                     Label("Edit", systemImage: "pencil")
                                 }
@@ -276,30 +272,27 @@ struct WatchedMoviesView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        editingEntry = nil
-                        showingAddMovie = true
+                        movieSheetConfig = MovieSheetConfig(entry: nil)
                     } label: {
                         Image(systemName: "plus")
                     }
                 }
             }
-            .sheet(isPresented: $showingAddMovie) {
+            .sheet(item: $movieSheetConfig) { config in
                 AddEditMovieView(
-                    entry: editingEntry,
+                    entry: config.entry,
                     onSave: { entry in
                         let repository = MovieRepository(modelContext: modelContext)
-                        if editingEntry != nil {
+                        if config.entry != nil {
                             repository.updateWatchedEntry(entry)
                         } else {
                             repository.addWatchedEntry(entry)
                         }
-                        editingEntry = nil
-                        showingAddMovie = false
+                        movieSheetConfig = nil
                         refreshTrigger += 1
                     },
                     onCancel: {
-                        editingEntry = nil
-                        showingAddMovie = false
+                        movieSheetConfig = nil
                     }
                 )
             }
@@ -576,6 +569,13 @@ private struct TagPill: View {
             .foregroundStyle(Color.accentColor)
             .cornerRadius(8)
     }
+}
+
+// MARK: - Sheet Config
+
+struct MovieSheetConfig: Identifiable {
+    let id = UUID()
+    let entry: WatchedEntry?
 }
 
 // MARK: - Preview
