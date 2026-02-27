@@ -57,10 +57,10 @@ final class WatchlistItem {
     
     var priorityIcon: String {
         switch priority {
-        case 1: return "🔴"
-        case 2: return "🟡"
-        case 3: return "🟢"
-        default: return "🟡"
+        case 1: return "exclamationmark.circle.fill"
+        case 2: return "clock.fill"
+        case 3: return "bubble.left.fill"
+        default: return "clock.fill"
         }
     }
 }
@@ -84,6 +84,14 @@ enum WhereToWatch: String, CaseIterable, Codable {
         case .theater: return "🎭"
         case .ott: return "📺"
         case .other: return "📍"
+        }
+    }
+
+    var sfSymbol: String {
+        switch self {
+        case .theater: return "theatermasks"
+        case .ott: return "tv"
+        case .other: return "mappin"
         }
     }
 }

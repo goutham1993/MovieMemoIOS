@@ -17,119 +17,150 @@ struct WatchlistView: View {
     @State private var showingAddItem = false
     @State private var editingItem: WatchlistItem?
     @State private var refreshTrigger = 0
-    
+    @State private var isEditing = false
+    @State private var displayItems: [WatchlistItem] = []
+
     private var filteredItems: [WatchlistItem] {
-        let _ = refreshTrigger // Force recalculation when this changes
+        let _ = refreshTrigger
         let repository = MovieRepository(modelContext: modelContext)
         var allItems = repository.getAllWatchlistItems()
-        
-        // Apply filter
+
         switch selectedFilter {
         case .all:
-            break // Show all items
+            break
         case .ott:
             allItems = allItems.filter { item in
                 guard let whereToWatch = item.whereToWatch,
-                      let whereOption = WhereToWatch(rawValue: whereToWatch) else {
-                    return false
-                }
+                      let whereOption = WhereToWatch(rawValue: whereToWatch) else { return false }
                 return whereOption == .ott
             }
         case .theater:
             allItems = allItems.filter { item in
                 guard let whereToWatch = item.whereToWatch,
-                      let whereOption = WhereToWatch(rawValue: whereToWatch) else {
-                    return false
-                }
+                      let whereOption = WhereToWatch(rawValue: whereToWatch) else { return false }
                 return whereOption == .theater
             }
         }
-        
-        // Apply search filter
+
         if !searchText.isEmpty {
             allItems = allItems.filter { item in
                 item.title.localizedCaseInsensitiveContains(searchText) ||
                 (item.notes?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
-        
+
         return allItems
     }
-    
+
+    private var theaterCount: Int {
+        displayItems.filter { item in
+            guard let w = item.whereToWatch, let opt = WhereToWatch(rawValue: w) else { return false }
+            return opt == .theater
+        }.count
+    }
+
+    private var ottCount: Int {
+        displayItems.filter { item in
+            guard let w = item.whereToWatch, let opt = WhereToWatch(rawValue: w) else { return false }
+            return opt == .ott
+        }.count
+    }
+
     var body: some View {
-        NavigationView {
-            VStack {
-                // Search and Filter Bar
-                VStack(spacing: 12) {
-                    // Search Bar
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                        TextField("Search watchlist...", text: $searchText)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Segmented Filter
+                Picker("Type", selection: $selectedFilter) {
+                    ForEach(WatchlistFilter.allCases, id: \.self) { filter in
+                        Text(filter.displayName).tag(filter)
                     }
-                    
-                    // Filter Picker
-                    Picker("Filter", selection: $selectedFilter) {
-                        ForEach(WatchlistFilter.allCases, id: \.self) { filter in
-                            Text(filter.displayName).tag(filter)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
                 }
+                .pickerStyle(.segmented)
                 .padding(.horizontal)
-                
-                // Watchlist Items
-                if filteredItems.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 50))
-                            .foregroundColor(.gray)
-                        Text(searchText.isEmpty ? "Your watchlist is empty" : "No items found")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                        if searchText.isEmpty {
-                            Text("Tap the + button to add movies to your watchlist!")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.vertical, 10)
+
+                if displayItems.isEmpty {
+                    emptyStateView
                 } else {
+                    // Quick Insights Row
+                    HStack(spacing: 0) {
+                        InsightMini(icon: "film", value: "\(displayItems.count)", label: "Total")
+                        Divider().frame(height: 32)
+                        InsightMini(icon: "theatermasks", value: "\(theaterCount)", label: "Theater")
+                        Divider().frame(height: 32)
+                        InsightMini(icon: "tv", value: "\(ottCount)", label: "Streaming")
+                    }
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(16)
+                    .padding(.horizontal)
+
+                    // Subtext
+                    Text("\(displayItems.count) \(displayItems.count == 1 ? "movie" : "movies") waiting")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .padding(.top, 10)
+                        .padding(.bottom, 2)
+
                     List {
-                        ForEach(filteredItems, id: \.id) { item in
+                        ForEach(displayItems, id: \.id) { item in
                             WatchlistItemRowView(item: item)
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets())
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     editingItem = item
                                     showingAddItem = true
                                 }
-                                .contextMenu {
-                                    Button("Edit") {
-                                        editingItem = item
-                                        showingAddItem = true
-                                    }
-                                    Button("Mark as Complete") {
-                                        moveToWatched(item)
-                                    }
-                                    Button("Delete", role: .destructive) {
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
                                         itemToDelete = item
                                         showingDeleteAlert = true
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
                                     }
+                                    Button {
+                                        moveToWatched(item)
+                                    } label: {
+                                        Label("Mark Watched", systemImage: "checkmark.circle")
+                                    }
+                                    .tint(.green)
+                                }
+                                .swipeActions(edge: .leading) {
+                                    Button {
+                                        editingItem = item
+                                        showingAddItem = true
+                                    } label: {
+                                        Label("Edit", systemImage: "pencil")
+                                    }
+                                    .tint(.blue)
                                 }
                         }
+                        .onMove(perform: moveItem)
                     }
-                    .listStyle(PlainListStyle())
+                    .listStyle(.plain)
+                    .environment(\.editMode, .constant(isEditing ? .active : .inactive))
                 }
             }
             .navigationTitle("Watchlist")
             .navigationBarTitleDisplayMode(.large)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic))
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if !displayItems.isEmpty {
+                        Button(isEditing ? "Done" : "Edit") {
+                            withAnimation { isEditing.toggle() }
+                        }
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
+                    Button {
                         editingItem = nil
                         showingAddItem = true
-                    }) {
+                    } label: {
                         Image(systemName: "plus")
                     }
                 }
@@ -146,7 +177,7 @@ struct WatchlistView: View {
                         }
                         editingItem = nil
                         showingAddItem = false
-                        refreshTrigger += 1 // Trigger UI refresh
+                        refreshTrigger += 1
                     },
                     onCancel: {
                         editingItem = nil
@@ -160,29 +191,129 @@ struct WatchlistView: View {
                     if let item = itemToDelete {
                         let repository = MovieRepository(modelContext: modelContext)
                         repository.deleteWatchlistItem(item)
-                        refreshTrigger += 1 // Trigger UI refresh
+                        refreshTrigger += 1
                     }
                 }
             } message: {
                 Text("Are you sure you want to delete this item from your watchlist?")
             }
+            .onAppear {
+                refreshTrigger += 1
+            }
+            .onChange(of: refreshTrigger) { _, _ in
+                displayItems = filteredItems
+            }
+            .onChange(of: searchText) { _, _ in
+                displayItems = filteredItems
+            }
+            .onChange(of: selectedFilter) { _, _ in
+                displayItems = filteredItems
+            }
         }
-        .onAppear {
-            // Refresh data whenever the view appears
-            refreshTrigger += 1
-        }
+        .tint(Color.accentColor)
     }
-    
+
+    @ViewBuilder
+    private var emptyStateView: some View {
+        VStack(spacing: 12) {
+            Spacer()
+            Image(systemName: "film")
+                .font(.system(size: 64))
+                .foregroundStyle(.secondary)
+            Text(searchText.isEmpty ? "Your watchlist is empty" : "No items found")
+                .font(.title3.weight(.semibold))
+            Text(searchText.isEmpty ? "Add movies you want to watch." : "Try a different search term.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private func moveToWatched(_ item: WatchlistItem) {
         let repository = MovieRepository(modelContext: modelContext)
         _ = repository.moveToWatched(item)
-        refreshTrigger += 1 // Trigger UI refresh
+        refreshTrigger += 1
+    }
+
+    private func moveItem(from source: IndexSet, to destination: Int) {
+        displayItems.move(fromOffsets: source, toOffset: destination)
     }
 }
 
+// MARK: - Insight Mini
+struct InsightMini: View {
+    let icon: String
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+            Text(value)
+                .font(.title2.weight(.bold))
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Platform Tag View
+struct PlatformTagView: View {
+    let type: WhereToWatch
+
+    var body: some View {
+        Label(type.displayName, systemImage: type.sfSymbol)
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.accentColor.opacity(0.12))
+            .foregroundStyle(Color.accentColor)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+// MARK: - Priority Dot View
+struct PriorityDotView: View {
+    let priority: Int
+
+    private var color: Color {
+        switch priority {
+        case 1: return .orange
+        case 2: return Color(red: 0.85, green: 0.65, blue: 0.0)
+        default: return Color(.tertiaryLabel)
+        }
+    }
+
+    private var label: String {
+        switch priority {
+        case 1: return "High Priority"
+        case 2: return "Soon"
+        default: return "Casual"
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 7, height: 7)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(color)
+        }
+    }
+}
+
+// MARK: - Watchlist Item Row View
 struct WatchlistItemRowView: View {
     let item: WatchlistItem
-    
+
     private var daysToRelease: Int? {
         guard let targetDate = item.targetDate else { return nil }
         let calendar = Calendar.current
@@ -191,105 +322,96 @@ struct WatchlistItemRowView: View {
         let components = calendar.dateComponents([.day], from: today, to: releaseDate)
         return components.day
     }
-    
+
     private var isOTTMovie: Bool {
         guard let whereToWatch = item.whereToWatch,
-              let whereOption = WhereToWatch(rawValue: whereToWatch) else {
-            return false
-        }
+              let whereOption = WhereToWatch(rawValue: whereToWatch) else { return false }
         return whereOption == .ott
     }
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.title)
-                        .font(.headline)
-                        .lineLimit(1)
-                    
-                    HStack {
-                        Text(item.languageEnum.flag)
-                        Text(item.languageEnum.displayName)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Spacer()
-                    }
-                }
-                
-                Spacer()
-                
-                // Show days to release or "Available to watch now"
-                if let days = daysToRelease {
-                    if days > 0 {
-                        // Future date - show days to release
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text("\(days)")
-                                .font(.headline)
-                                .foregroundColor(.blue)
-                            Text(days == 1 ? "day" : "days")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    } else if days <= 0 && isOTTMovie {
-                        // Past or today's date for OTT - show "Available to watch now"
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text("Available")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.green)
-                            Text("to watch now")
-                                .font(.caption2)
-                                .foregroundColor(.green)
-                        }
-                    }
+        VStack(alignment: .leading, spacing: 6) {
+            // Title + Priority
+            HStack(alignment: .top) {
+                Text(item.title)
+                    .font(.title3.weight(.semibold))
+                    .lineLimit(2)
+                Spacer(minLength: 8)
+                PriorityDotView(priority: item.priority)
+            }
+
+            // Language + Platform tag
+            HStack(spacing: 8) {
+                Text(item.languageEnum.displayName)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if let whereToWatch = item.whereToWatch,
+                   let opt = WhereToWatch(rawValue: whereToWatch) {
+                    Text("•")
+                        .foregroundStyle(.secondary)
+                    PlatformTagView(type: opt)
                 }
             }
-            
-            // Genre and Where to Watch on same row
-            HStack(spacing: 12) {
-                if let genre = item.genre, !genre.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "film")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                        Text(genre)
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                    }
-                }
-                
-                if let whereToWatch = item.whereToWatch, 
-                   let whereOption = WhereToWatch(rawValue: whereToWatch) {
-                    HStack(spacing: 4) {
-                        Text(whereOption.icon)
-                            .font(.caption)
-                        Text(whereOption.displayName)
-                            .font(.caption)
-                            .foregroundColor(.purple)
-                    }
+
+            // Genre
+            if let genre = item.genre, !genre.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "film")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(genre)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
-            
+
+            // Notes preview
             if let notes = item.notes, !notes.isEmpty {
                 Text(notes)
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
-            
-            if let targetDate = item.targetDate {
-                HStack {
+
+            // Release / availability
+            if let days = daysToRelease {
+                if days > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                        Text("\(days) \(days == 1 ? "day" : "days") to release")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                    }
+                } else if isOTTMovie {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                        Text("Available to watch now")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
+                }
+            } else if let targetDate = item.targetDate {
+                HStack(spacing: 4) {
                     Image(systemName: "calendar")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                     Text("Release: \(targetDate, style: .date)")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                 }
             }
         }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+        .padding(.horizontal)
         .padding(.vertical, 4)
     }
 }
@@ -299,14 +421,11 @@ enum WatchlistFilter: String, CaseIterable {
     case all = "All"
     case ott = "OTT"
     case theater = "Theater"
-    
-    var displayName: String {
-        return self.rawValue
-    }
+
+    var displayName: String { rawValue }
 }
 
 #Preview {
     WatchlistView()
         .modelContainer(for: [WatchedEntry.self, WatchlistItem.self, Genre.self], inMemory: true)
 }
-
