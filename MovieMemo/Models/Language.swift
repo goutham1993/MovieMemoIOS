@@ -55,5 +55,9 @@ enum Language: String, CaseIterable, Codable {
     var icon: String {
         return flag
     }
+
+    var sfSymbol: String {
+        return "globe"
+    }
 }
 
