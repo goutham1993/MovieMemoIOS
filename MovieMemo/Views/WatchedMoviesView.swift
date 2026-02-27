@@ -19,13 +19,36 @@ struct WatchedMoviesView: View {
     @State private var showingAddMovie = false
     @State private var editingEntry: WatchedEntry?
     @State private var refreshTrigger = 0
+
+    // Deep-link filter from Insights
+    @State private var insightFilterType: String? = nil
+    @State private var insightFilterValue: String? = nil
     
     // Simple computed property for filtered entries
     private var filteredEntries: [WatchedEntry] {
         let _ = refreshTrigger // This ensures the computed property recalculates when refreshTrigger changes
         let repository = MovieRepository(modelContext: modelContext)
         var entries = repository.getWatchedEntries(filter: selectedFilter)
-        
+
+        // Apply insight deep-link filter
+        if let filterType = insightFilterType, let filterValue = insightFilterValue {
+            entries = entries.filter { entry in
+                switch filterType {
+                case "genre":
+                    return entry.genre?.localizedCaseInsensitiveContains(filterValue) ?? false
+                case "language":
+                    return entry.languageEnum.displayName.localizedCaseInsensitiveContains(filterValue)
+                case "companion":
+                    guard let companions = entry.companions, !companions.isEmpty else { return false }
+                    return companions.localizedCaseInsensitiveContains(filterValue)
+                case "location":
+                    return entry.locationTypeEnum.displayName.localizedCaseInsensitiveContains(filterValue)
+                default:
+                    return true
+                }
+            }
+        }
+
         // Apply search filter
         if !searchText.isEmpty {
             entries = entries.filter { entry in
@@ -113,6 +136,35 @@ struct WatchedMoviesView: View {
             VStack {
                 // Search and Filter Bar
                 VStack(spacing: 12) {
+                    // Insight deep-link filter chip
+                    if let filterValue = insightFilterValue, let filterType = insightFilterType {
+                        HStack(spacing: 8) {
+                            Image(systemName: filterTypeIcon(filterType))
+                                .font(.caption)
+                                .foregroundStyle(Color.accentColor)
+                            Text("Filtered by: \(filterValue)")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(Color.accentColor)
+                            Spacer()
+                            Button {
+                                withAnimation(.spring(duration: 0.3)) {
+                                    insightFilterType = nil
+                                    insightFilterValue = nil
+                                    refreshTrigger += 1
+                                }
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                                    .font(.subheadline)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+
                     // Search Bar
                     HStack {
                         Image(systemName: "magnifyingglass")
@@ -237,6 +289,27 @@ struct WatchedMoviesView: View {
         .onAppear {
             // Refresh data whenever the view appears
             refreshTrigger += 1
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FilterWatchedMovies"))) { notification in
+            guard
+                let filterType = notification.userInfo?["filterType"] as? String,
+                let value = notification.userInfo?["value"] as? String
+            else { return }
+            withAnimation(.spring(duration: 0.3)) {
+                insightFilterType = filterType
+                insightFilterValue = value
+            }
+            refreshTrigger += 1
+        }
+    }
+
+    private func filterTypeIcon(_ filterType: String) -> String {
+        switch filterType {
+        case "genre":       return "tag"
+        case "language":    return "globe"
+        case "companion":   return "person.2"
+        case "location":    return "location"
+        default:            return "line.3.horizontal.decrease.circle"
         }
     }
 }
