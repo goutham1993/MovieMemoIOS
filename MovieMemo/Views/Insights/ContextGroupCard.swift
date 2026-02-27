@@ -42,22 +42,25 @@ struct ContextGroupCard: View {
             locationSection
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .sheet(item: $activeDetail) { detail in
-            switch detail {
-            case .companion:
-                InsightDetailsSheet(
-                    title: "Companion",
-                    bodyText: "Counts how many movies you watched with each companion (from the companions field). Solo movies (no companion entered) are not shown here. Tap a name to filter your Watched list.",
-                    dateRange: data.dateRange
-                )
-            case .location:
-                InsightDetailsSheet(
-                    title: "Location",
-                    bodyText: "Splits movies by where you watched them: Home, Theater, Friend's Home, or Other. For theater movies with spend data, the average per-visit spend is shown. Tap a location to filter.",
-                    dateRange: data.dateRange
-                )
+            Group {
+                switch detail {
+                case .companion:
+                    InsightDetailsSheet(
+                        title: "Companion",
+                        bodyText: "Counts how many movies you watched with each companion (from the companions field). Solo movies (no companion entered) are not shown here. Tap a name to filter your Watched list.",
+                        dateRange: data.dateRange
+                    )
+                case .location:
+                    InsightDetailsSheet(
+                        title: "Location",
+                        bodyText: "Splits movies by where you watched them: Home, Theater, Friend's Home, or Other. For theater movies with spend data, the average per-visit spend is shown. Tap a location to filter.",
+                        dateRange: data.dateRange
+                    )
+                }
             }
+            .preferredColorScheme(.dark)
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -218,7 +221,7 @@ private struct CompanionRow: View {
                 }
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(Color(.tertiarySystemFill)).frame(height: 6)
+                        Capsule().fill(Theme.surface2).frame(height: 6)
                         Capsule().fill(Color.blue.gradient)
                             .frame(width: animate ? geo.size.width * percent : 0, height: 6)
                     }
@@ -267,7 +270,7 @@ private struct LocationRow: View {
                 }
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(Color(.tertiarySystemFill)).frame(height: 6)
+                        Capsule().fill(Theme.surface2).frame(height: 6)
                         Capsule().fill(item.color.gradient)
                             .frame(width: animate ? geo.size.width * percent : 0, height: 6)
                     }

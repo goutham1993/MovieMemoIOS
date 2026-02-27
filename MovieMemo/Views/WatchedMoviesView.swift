@@ -265,10 +265,13 @@ struct WatchedMoviesView: View {
                 }
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .navigationTitle("Watched")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(Theme.bg, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search movies…")
-            .tint(Color.accentColor)
+            .tint(Theme.accent)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
@@ -295,6 +298,7 @@ struct WatchedMoviesView: View {
                         movieSheetConfig = nil
                     }
                 )
+                .preferredColorScheme(.dark)
             }
             .alert("Delete Movie", isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) { }
@@ -309,6 +313,7 @@ struct WatchedMoviesView: View {
                 Text("Are you sure you want to delete this movie? This action cannot be undone.")
             }
         }
+        .background(Theme.bg.ignoresSafeArea())
         .onAppear {
             refreshTrigger += 1
         }
@@ -373,8 +378,9 @@ private struct InsightStripView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .padding(.horizontal, 8)
-        .background(.ultraThinMaterial)
-        .cornerRadius(16)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.divider, lineWidth: 1))
     }
 }
 
@@ -418,8 +424,9 @@ private struct InsightMiniRow: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
         .padding(.horizontal, 8)
-        .background(.ultraThinMaterial)
-        .cornerRadius(16)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.divider, lineWidth: 1))
     }
 }
 
@@ -504,9 +511,9 @@ struct WatchedMovieRowView: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
     }
 
     private func formatDate(_ dateString: String) -> String {
@@ -565,9 +572,9 @@ private struct TagPill: View {
             .font(.caption)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color.accentColor.opacity(0.1))
-            .foregroundStyle(Color.accentColor)
-            .cornerRadius(8)
+        .background(Theme.accent.opacity(0.12))
+        .foregroundStyle(Theme.accent)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 

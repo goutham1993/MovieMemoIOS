@@ -127,6 +127,7 @@ private struct CustomRangeSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
     }

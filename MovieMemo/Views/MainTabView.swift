@@ -41,7 +41,7 @@ struct MainTabView: View {
                 }
                 .tag(3)
         }
-        .accentColor(.blue)
+        .tint(Theme.accent)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToWatchlist"))) { _ in
             selectedTab = 1
         }

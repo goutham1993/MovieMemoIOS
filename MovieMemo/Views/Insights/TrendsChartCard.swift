@@ -36,7 +36,7 @@ struct TrendsChartCard: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .insightDetailsSheet(
             isPresented: $showDetail,
             title: "Trends",

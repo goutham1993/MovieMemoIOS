@@ -64,7 +64,7 @@ struct WeekSplitCard: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .insightDetailsSheet(
             isPresented: $showDetail,
             title: "Weekday vs Weekend",
@@ -101,7 +101,7 @@ struct WeekSplitCard: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color(.tertiarySystemFill))
+                        .fill(Theme.surface2)
                         .frame(height: 10)
                     Capsule()
                         .fill(color.gradient)

@@ -2,64 +2,8 @@
 //  AddEditMovieView.swift
 //  MovieMemo
 //
-//  Created by goutham pajjuru on 10/25/25.
-//
 
 import SwiftUI
-
-// MARK: - Design System
-
-private enum Spacing {
-    static let screenHorizontal: CGFloat = 20
-    static let sectionVertical: CGFloat = 32
-    static let rowVertical: CGFloat = 16
-    static let rowPadding: CGFloat = 14
-}
-
-// MARK: - Scale Button Style
-
-private struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeInOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Movie Row (Reusable)
-
-struct MovieRow: View {
-    var label: String
-    var value: String
-    var icon: String
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                HStack(spacing: 10) {
-                    Image(systemName: icon)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-                    Text(label)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(value)
-                        .font(.system(size: 17))
-                        .foregroundColor(.primary)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(.tertiaryLabel))
-                }
-                .padding(.vertical, Spacing.rowPadding)
-                Divider()
-            }
-        }
-        .buttonStyle(ScaleButtonStyle())
-    }
-}
 
 // MARK: - Add/Edit Movie View
 
@@ -92,7 +36,6 @@ struct AddEditMovieView: View {
     @State private var showTimeSheet = false
     @State private var showLanguageSheet = false
     @State private var showMoreDetails = false
-    @State private var tappedStar: Int? = nil
 
     private var isEditing: Bool { entry != nil }
 
@@ -125,31 +68,49 @@ struct AddEditMovieView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: Spacing.sectionVertical) {
-                    headerSection
-                    watchDetailsSection
-                    experienceSection
-                    extrasSection
+            ZStack(alignment: .bottom) {
+                Theme.bg.ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: Theme.Spacing.section) {
+                        headerSection
+                        watchDetailsSection
+                        experienceSection
+                        moreDetailsSection
+                    }
+                    .padding(.horizontal, Theme.Spacing.screenH)
+                    .padding(.top, 16)
+                    .padding(.bottom, 96)
                 }
-                .padding(.horizontal, Spacing.screenHorizontal)
-                .padding(.top, 16)
-                .padding(.bottom, 48)
+                .scrollDismissesKeyboard(.interactively)
+
+                // Sticky bottom Save button
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(LinearGradient(
+                            colors: [Theme.bg.opacity(0), Theme.bg],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ))
+                        .frame(height: 24)
+
+                    CinematicPrimaryButton(isEditing ? "Save Changes" : "Save Movie", isDisabled: isTitleEmpty) {
+                        saveMovie()
+                    }
+                    .padding(.horizontal, Theme.Spacing.screenH)
+                    .padding(.bottom, 16)
+                    .background(Theme.bg)
+                }
             }
-            .background(Color(.systemBackground))
-            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(isEditing ? "Edit Movie" : "Add Movie")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(Theme.bg, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel", action: onCancel)
-                        .foregroundColor(.secondary)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save", action: saveMovie)
-                        .fontWeight(.semibold)
-                        .foregroundColor(isTitleEmpty ? Color(.tertiaryLabel) : Color.accentColor)
-                        .disabled(isTitleEmpty)
+                        .foregroundColor(Theme.secondaryText)
                 }
             }
             .sheet(isPresented: $showLocationSheet) {
@@ -173,6 +134,7 @@ struct AddEditMovieView: View {
                     .presentationDragIndicator(.visible)
             }
         }
+        .preferredColorScheme(.dark)
         .onAppear {
             if let entry { loadEntryData(entry) }
         }
@@ -181,186 +143,155 @@ struct AddEditMovieView: View {
     // MARK: - Section: Header
 
     private var headerSection: some View {
-        VStack(spacing: 20) {
-            VStack(spacing: 0) {
-                TextField("Movie Title", text: $title)
-                    .font(.system(size: 24, weight: .semibold))
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.primary)
-                    .padding(.bottom, 10)
-                Rectangle()
-                    .fill(isTitleEmpty ? Color(.separator) : Color.accentColor)
-                    .frame(height: 1.5)
-                    .animation(.easeInOut(duration: 0.2), value: isTitleEmpty)
-            }
-        }
-        .frame(maxWidth: .infinity)
+        CinematicTextField(
+            placeholder: "Movie Title",
+            text: $title,
+            font: Theme.Font.inputTitle,
+            textAlignment: .center
+        )
     }
 
     // MARK: - Section: Watch Details
 
     private var watchDetailsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Watch Details")
-                .font(.system(size: 20, weight: .semibold))
-                .padding(.bottom, Spacing.rowVertical)
+                .font(Theme.Font.sectionHeader)
+                .foregroundColor(Theme.secondaryText)
 
-            // Date row with inline expandable picker
-            VStack(spacing: 0) {
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        showDatePicker.toggle()
-                    }
-                } label: {
-                    VStack(spacing: 6) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                                .frame(width: 24)
-                            Text("Watch Date")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text(formattedDate)
-                                .font(.system(size: 17))
-                                .foregroundColor(.primary)
-                            Image(systemName: showDatePicker ? "chevron.up" : "chevron.right")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(Color(.tertiaryLabel))
-                                .animation(.easeInOut(duration: 0.2), value: showDatePicker)
-                        }
-                        .padding(.vertical, Spacing.rowPadding)
-                        if !showDatePicker { Divider() }
-                    }
-                }
-                .buttonStyle(ScaleButtonStyle())
-
-                if showDatePicker {
+            CinematicSurface {
+                VStack(spacing: 0) {
+                    // Date row with inline expandable picker
                     VStack(spacing: 0) {
-                        DatePicker("", selection: $watchedDate, displayedComponents: .date)
-                            .datePickerStyle(.graphical)
-                            .labelsHidden()
-                            .padding(.bottom, 8)
-                        Divider()
+                        Button {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                showDatePicker.toggle()
+                            }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Theme.secondaryText)
+                                    .frame(width: 24)
+
+                                Text("Watch Date")
+                                    .font(Theme.Font.rowLabel)
+                                    .foregroundColor(Theme.secondaryText)
+
+                                Spacer()
+
+                                Text(formattedDate)
+                                    .font(Theme.Font.rowValue)
+                                    .foregroundColor(Theme.primaryText)
+
+                                Image(systemName: showDatePicker ? "chevron.up" : "chevron.right")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(Theme.tertiaryText)
+                                    .animation(.easeInOut(duration: 0.2), value: showDatePicker)
+                            }
+                            .padding(.vertical, Theme.Spacing.rowPadding)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(CinematicScaleButtonStyle())
+
+                        if showDatePicker {
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Theme.divider)
+                                    .frame(height: 1)
+                                DatePicker("", selection: $watchedDate, displayedComponents: .date)
+                                    .datePickerStyle(.graphical)
+                                    .labelsHidden()
+                                    .tint(Theme.accent)
+                                    .padding(.bottom, 8)
+                            }
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        }
+
+                        if !showDatePicker {
+                            Rectangle().fill(Theme.divider).frame(height: 1)
+                        }
                     }
-                    .transition(.move(edge: .top).combined(with: .opacity))
+
+                    CinematicRow(
+                        icon: locationSFSymbol(for: locationType),
+                        label: "Location",
+                        value: locationType.displayName
+                    ) { showLocationSheet = true }
+
+                    Rectangle().fill(Theme.divider).frame(height: 1)
+
+                    CinematicRow(
+                        icon: timeSFSymbol(for: timeOfDay),
+                        label: "Time of Day",
+                        value: timeOfDay.displayName
+                    ) { showTimeSheet = true }
+
+                    Rectangle().fill(Theme.divider).frame(height: 1)
+
+                    CinematicRow(
+                        icon: "globe",
+                        label: "Language",
+                        value: language.displayName,
+                        chevron: true
+                    ) { showLanguageSheet = true }
                 }
             }
-
-            MovieRow(
-                label: "Location",
-                value: locationType.displayName,
-                icon: locationSFSymbol(for: locationType)
-            ) { showLocationSheet = true }
-
-            MovieRow(
-                label: "Time of Day",
-                value: timeOfDay.displayName,
-                icon: timeSFSymbol(for: timeOfDay)
-            ) { showTimeSheet = true }
-
-            MovieRow(
-                label: "Language",
-                value: language.displayName,
-                icon: "globe"
-            ) { showLanguageSheet = true }
         }
     }
 
     // MARK: - Section: Experience
 
     private var experienceSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Experience")
-                .font(.system(size: 20, weight: .semibold))
-                .padding(.bottom, Spacing.rowVertical)
+                .font(Theme.Font.sectionHeader)
+                .foregroundColor(Theme.secondaryText)
 
-            // Rating — focal point
-            VStack(spacing: 14) {
-                Text("How did you feel?")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
+            CinematicSurface {
+                VStack(spacing: 0) {
+                    // Rating
+                    VStack(spacing: 6) {
+                        Text("How did you feel?")
+                            .font(Theme.Font.rowLabel)
+                            .foregroundColor(Theme.secondaryText)
 
-                HStack(spacing: 14) {
-                    ForEach(1...5, id: \.self) { star in
-                        Button {
-                            let impact = UIImpactFeedbackGenerator(style: .light)
-                            impact.impactOccurred()
-                            withAnimation(.spring(response: 0.2, dampingFraction: 0.4)) {
-                                tappedStar = star
-                                rating = (rating == star * 2) ? nil : star * 2
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                withAnimation(.spring(response: 0.3)) {
-                                    tappedStar = nil
-                                }
-                            }
-                        } label: {
-                            Image(systemName: (rating ?? 0) >= star * 2 ? "star.fill" : "star")
-                                .font(.system(size: 28))
-                                .foregroundColor(
-                                    (rating ?? 0) >= star * 2
-                                        ? Color.accentColor
-                                        : Color(.tertiaryLabel)
-                                )
-                                .scaleEffect(tappedStar == star ? 1.35 : 1.0)
-                        }
-                        .buttonStyle(.plain)
+                        RatingControl(rating: $rating)
                     }
-                }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
 
-                if let r = rating {
-                    HStack(spacing: 8) {
-                        Text("\(r / 2) out of 5")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                        Button {
-                            withAnimation(.spring(response: 0.2)) { rating = nil }
-                        } label: {
-                            Image(systemName: "arrow.counterclockwise")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(.secondary)
-                                .padding(7)
-                                .background(Color(.secondarySystemBackground))
-                                .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
+                    Rectangle().fill(Theme.divider).frame(height: 1)
+
+                    // Companions
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.2")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Theme.secondaryText)
+                            .frame(width: 24)
+
+                        Text("Companions")
+                            .font(Theme.Font.rowLabel)
+                            .foregroundColor(Theme.secondaryText)
+
+                        Spacer()
+
+                        TextField("Who joined you?", text: $companions)
+                            .font(Theme.Font.rowValue)
+                            .multilineTextAlignment(.trailing)
+                            .foregroundColor(Theme.primaryText)
+                            .tint(Theme.accent)
                     }
-                    .transition(.scale.combined(with: .opacity))
+                    .padding(.vertical, Theme.Spacing.rowPadding)
                 }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-
-            Divider()
-                .padding(.bottom, Spacing.rowVertical)
-
-            // Companions
-            VStack(spacing: 6) {
-                HStack(spacing: 10) {
-                    Image(systemName: "person.2")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-                    Text("Companions")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    TextField("Who joined you?", text: $companions)
-                        .font(.system(size: 17))
-                        .multilineTextAlignment(.trailing)
-                }
-                .padding(.vertical, Spacing.rowPadding)
-                Divider()
             }
         }
     }
 
-    // MARK: - Section: Extras (More Details)
+    // MARK: - Section: More Details (collapsible)
 
-    private var extrasSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+    private var moreDetailsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
             Button {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     showMoreDetails.toggle()
@@ -368,95 +299,95 @@ struct AddEditMovieView: View {
             } label: {
                 HStack {
                     Text("More Details")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.primary)
+                        .font(Theme.Font.sectionHeader)
+                        .foregroundColor(Theme.secondaryText)
                     Spacer()
                     Image(systemName: showMoreDetails ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Theme.tertiaryText)
                         .animation(.easeInOut(duration: 0.2), value: showMoreDetails)
                 }
             }
             .buttonStyle(.plain)
 
             if showMoreDetails {
-                VStack(alignment: .leading, spacing: 0) {
-                    inlineInputRow(
-                        icon: "tag",
-                        label: "Genre",
-                        placeholder: "e.g. Action, Drama",
-                        text: $genre
-                    )
+                CinematicSurface {
+                    VStack(spacing: 0) {
+                        inlineInputRow(icon: "tag", label: "Genre", placeholder: "e.g. Action, Drama", text: $genre)
+                        Rectangle().fill(Theme.divider).frame(height: 1)
 
-                    // Amount spent
-                    VStack(spacing: 6) {
-                        HStack(spacing: 10) {
+                        // Amount Spent
+                        HStack(spacing: 12) {
                             Image(systemName: "dollarsign.circle")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Theme.secondaryText)
                                 .frame(width: 24)
                             Text("Amount Spent")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .font(Theme.Font.rowLabel)
+                                .foregroundColor(Theme.secondaryText)
                             Spacer()
                             TextField("0.00", text: $spendDollars)
                                 .keyboardType(.decimalPad)
-                                .font(.system(size: 17))
+                                .font(Theme.Font.rowValue)
                                 .multilineTextAlignment(.trailing)
-                                .frame(maxWidth: 90)
+                                .foregroundColor(Theme.primaryText)
+                                .tint(Theme.accent)
+                                .frame(maxWidth: 80)
                             Text("USD")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
+                                .font(Theme.Font.caption)
+                                .foregroundColor(Theme.tertiaryText)
                         }
-                        .padding(.vertical, Spacing.rowPadding)
-                        Divider()
-                    }
+                        .padding(.vertical, Theme.Spacing.rowPadding)
 
-                    // Duration
-                    VStack(spacing: 6) {
-                        HStack(spacing: 10) {
+                        Rectangle().fill(Theme.divider).frame(height: 1)
+
+                        // Duration
+                        HStack(spacing: 12) {
                             Image(systemName: "timer")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Theme.secondaryText)
                                 .frame(width: 24)
                             Text("Duration")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .font(Theme.Font.rowLabel)
+                                .foregroundColor(Theme.secondaryText)
                             Spacer()
                             TextField("Minutes", text: $durationMin)
                                 .keyboardType(.numberPad)
-                                .font(.system(size: 17))
+                                .font(Theme.Font.rowValue)
                                 .multilineTextAlignment(.trailing)
-                                .frame(maxWidth: 90)
+                                .foregroundColor(Theme.primaryText)
+                                .tint(Theme.accent)
+                                .frame(maxWidth: 80)
                             Text("min")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
+                                .font(Theme.Font.caption)
+                                .foregroundColor(Theme.tertiaryText)
                         }
-                        .padding(.vertical, Spacing.rowPadding)
-                        Divider()
-                    }
+                        .padding(.vertical, Theme.Spacing.rowPadding)
 
-                    // Notes
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "note.text")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                                .frame(width: 24)
-                            Text("Notes")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
+                        Rectangle().fill(Theme.divider).frame(height: 1)
+
+                        // Notes
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "note.text")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Theme.secondaryText)
+                                    .frame(width: 24)
+                                Text("Notes")
+                                    .font(Theme.Font.rowLabel)
+                                    .foregroundColor(Theme.secondaryText)
+                            }
+                            .padding(.top, Theme.Spacing.rowPadding)
+
+                            TextField("Your review or thoughts…", text: $notes, axis: .vertical)
+                                .font(Theme.Font.rowValue)
+                                .foregroundColor(Theme.primaryText)
+                                .tint(Theme.accent)
+                                .lineLimit(3...6)
+                                .padding(.bottom, Theme.Spacing.rowPadding)
                         }
-                        .padding(.top, Spacing.rowPadding)
-
-                        TextField("Your review or thoughts...", text: $notes, axis: .vertical)
-                            .font(.system(size: 17))
-                            .lineLimit(3...6)
-                            .padding(.bottom, Spacing.rowPadding)
-                        Divider()
                     }
                 }
-                .padding(.top, Spacing.rowVertical)
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
@@ -471,23 +402,22 @@ struct AddEditMovieView: View {
         placeholder: String,
         text: Binding<String>
     ) -> some View {
-        VStack(spacing: 6) {
-            HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .frame(width: 24)
-                Text(label)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
-                Spacer()
-                TextField(placeholder, text: text)
-                    .font(.system(size: 17))
-                    .multilineTextAlignment(.trailing)
-            }
-            .padding(.vertical, Spacing.rowPadding)
-            Divider()
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Theme.secondaryText)
+                .frame(width: 24)
+            Text(label)
+                .font(Theme.Font.rowLabel)
+                .foregroundColor(Theme.secondaryText)
+            Spacer()
+            TextField(placeholder, text: text)
+                .font(Theme.Font.rowValue)
+                .multilineTextAlignment(.trailing)
+                .foregroundColor(Theme.primaryText)
+                .tint(Theme.accent)
         }
+        .padding(.vertical, Theme.Spacing.rowPadding)
     }
 
     // MARK: - Icon Helpers
@@ -581,56 +511,61 @@ private struct LocationPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
-            List {
-                Section {
-                    ForEach(LocationType.allCases, id: \.self) { type in
-                        Button {
+        CinematicSheetContainer(title: "Location") {
+            VStack(spacing: 0) {
+                ForEach(LocationType.allCases, id: \.self) { type in
+                    VStack(spacing: 0) {
+                        CinematicPickerRow(
+                            icon: sfSymbol(for: type),
+                            label: type.displayName,
+                            isSelected: type == selection
+                        ) {
                             withAnimation { selection = type }
-                        } label: {
-                            HStack(spacing: 14) {
-                                Image(systemName: sfSymbol(for: type))
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 24)
-                                Text(type.displayName)
-                                    .font(.system(size: 17))
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                if type == selection {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.accentColor)
-                                }
-                            }
-                            .padding(.vertical, 4)
                         }
+                        Rectangle().fill(Theme.divider).frame(height: 1)
+                            .padding(.leading, Theme.Spacing.screenH)
                     }
                 }
 
                 if selection == .theater {
-                    Section("Theater Details") {
-                        TextField("Theater Name", text: $theaterName)
-                        TextField("City", text: $city)
-                        HStack {
-                            Text("People attending")
-                            Spacer()
-                            TextField("0", text: $peopleCountText)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 60)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Theater Details")
+                            .font(Theme.Font.sectionHeader)
+                            .foregroundColor(Theme.secondaryText)
+                            .padding(.horizontal, Theme.Spacing.screenH)
+                            .padding(.top, 24)
+
+                        VStack(spacing: 10) {
+                            CinematicTextField(placeholder: "Theater Name", text: $theaterName)
+                            CinematicTextField(placeholder: "City", text: $city)
+                            HStack(spacing: 12) {
+                                Text("People attending")
+                                    .font(Theme.Font.rowLabel)
+                                    .foregroundColor(Theme.secondaryText)
+                                Spacer()
+                                TextField("0", text: $peopleCountText)
+                                    .keyboardType(.numberPad)
+                                    .font(Theme.Font.rowValue)
+                                    .foregroundColor(Theme.primaryText)
+                                    .tint(Theme.accent)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 60)
+                                    .padding(Theme.Spacing.rowPadding)
+                                    .background(Theme.surface2)
+                                    .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.field, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: Theme.Radius.field, style: .continuous)
+                                            .strokeBorder(Theme.divider, lineWidth: 1)
+                                    )
+                            }
+                            .padding(.horizontal, Theme.Spacing.screenH)
                         }
+                        .padding(.horizontal, Theme.Spacing.screenH)
                     }
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
-            .navigationTitle("Location")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .fontWeight(.semibold)
-                }
-            }
+            .padding(.top, 8)
         }
     }
 
@@ -651,34 +586,26 @@ private struct TimeOfDayPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
-            List {
+        CinematicSheetContainer(title: "Time of Day") {
+            VStack(spacing: 0) {
                 ForEach(TimeOfDay.allCases, id: \.self) { time in
-                    Button {
-                        selection = time
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: sfSymbol(for: time))
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                                .frame(width: 24)
-                            Text(time.displayName)
-                                .font(.system(size: 17))
-                                .foregroundColor(.primary)
-                            Spacer()
-                            if time == selection {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.accentColor)
-                            }
+                    VStack(spacing: 0) {
+                        CinematicPickerRow(
+                            icon: sfSymbol(for: time),
+                            label: time.displayName,
+                            isSelected: time == selection
+                        ) {
+                            selection = time
+                            dismiss()
                         }
-                        .padding(.vertical, 4)
+                        if time != TimeOfDay.allCases.last {
+                            Rectangle().fill(Theme.divider).frame(height: 1)
+                                .padding(.leading, Theme.Spacing.screenH)
+                        }
                     }
                 }
             }
-            .navigationTitle("Time of Day")
-            .navigationBarTitleDisplayMode(.inline)
+            .padding(.top, 8)
         }
     }
 
@@ -699,30 +626,26 @@ private struct LanguagePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
-            List {
+        CinematicSheetContainer(title: "Language") {
+            VStack(spacing: 0) {
                 ForEach(Language.allCases, id: \.self) { lang in
-                    Button {
-                        selection = lang
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Text(lang.displayName)
-                                .font(.system(size: 17))
-                                .foregroundColor(.primary)
-                            Spacer()
-                            if lang == selection {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.accentColor)
-                            }
+                    VStack(spacing: 0) {
+                        CinematicPickerRow(
+                            icon: nil,
+                            label: lang.displayName,
+                            isSelected: lang == selection
+                        ) {
+                            selection = lang
+                            dismiss()
                         }
-                        .padding(.vertical, 4)
+                        if lang != Language.allCases.last {
+                            Rectangle().fill(Theme.divider).frame(height: 1)
+                                .padding(.leading, Theme.Spacing.screenH)
+                        }
                     }
                 }
             }
-            .navigationTitle("Language")
-            .navigationBarTitleDisplayMode(.inline)
+            .padding(.top, 8)
         }
     }
 }

@@ -227,6 +227,8 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(Theme.bg, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(isPresented: $showingExportSheet) {
                 if let fileURL = exportFileURL {
                     ShareSheet(activityItems: [fileURL])

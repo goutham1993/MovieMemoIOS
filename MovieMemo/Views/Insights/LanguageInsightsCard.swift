@@ -78,7 +78,7 @@ struct LanguageInsightsCard: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .insightDetailsSheet(
             isPresented: $showDetail,
             title: "Language Profile",
@@ -150,7 +150,7 @@ private struct LanguageRow: View {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule()
-                            .fill(Color(.tertiarySystemFill))
+                            .fill(Theme.surface2)
                             .frame(height: 6)
                         Capsule()
                             .fill(barColor.gradient)

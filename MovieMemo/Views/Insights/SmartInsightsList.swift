@@ -43,13 +43,14 @@ struct SmartInsightsList: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .sheet(item: $selectedInsight) { insight in
             InsightDetailsSheet(
                 title: insight.detailTitle,
                 bodyText: insight.detailBody,
                 dateRange: dateRange
             )
+            .preferredColorScheme(.dark)
         }
     }
 }

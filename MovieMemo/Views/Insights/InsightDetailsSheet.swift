@@ -44,6 +44,7 @@ struct InsightDetailsSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }

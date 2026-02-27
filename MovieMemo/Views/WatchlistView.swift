@@ -91,8 +91,9 @@ struct WatchlistView: View {
                         InsightMini(icon: "tv", value: "\(ottCount)", label: "Streaming")
                     }
                     .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(16)
+                    .background(Theme.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.divider, lineWidth: 1))
                     .padding(.horizontal)
 
                     // Subtext
@@ -142,11 +143,17 @@ struct WatchlistView: View {
                         .onMove(perform: moveItem)
                     }
                     .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .background(Theme.bg)
                     .environment(\.editMode, .constant(isEditing ? .active : .inactive))
                 }
             }
+            .background(Theme.bg.ignoresSafeArea())
             .navigationTitle("Watchlist")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(Theme.bg, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -184,6 +191,7 @@ struct WatchlistView: View {
                         showingAddItem = false
                     }
                 )
+                .preferredColorScheme(.dark)
             }
             .alert("Delete Item", isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) { }
@@ -272,9 +280,9 @@ struct PlatformTagView: View {
             .font(.caption.weight(.medium))
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Color.accentColor.opacity(0.12))
-            .foregroundStyle(Color.accentColor)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+        .background(Theme.accent.opacity(0.12))
+        .foregroundStyle(Theme.accent)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
@@ -408,9 +416,10 @@ struct WatchlistItemRowView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.04), radius: 6, y: 3)
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.divider, lineWidth: 1))
+        .shadow(color: .black.opacity(0.18), radius: 6, y: 3)
         .padding(.horizontal)
         .padding(.vertical, 4)
     }

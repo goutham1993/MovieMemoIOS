@@ -41,15 +41,18 @@ private struct InsightsContentView: View {
                 InsightsRangeSelector(viewModel: viewModel)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(.bar)
+                    .background(Theme.surface)
 
-                Divider()
+                Rectangle().fill(Theme.divider).frame(height: 1)
 
                 // Main scroll content
                 scrollContent
             }
             .navigationTitle("Insights")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(Theme.bg, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -125,7 +128,7 @@ private struct InsightsContentView: View {
             .padding(16)
             .padding(.bottom, 24)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Theme.bg)
         .overlay(alignment: .top) {
             // Loading shimmer while refreshing data that already exists
             if viewModel.isLoading {
@@ -150,7 +153,7 @@ private struct InsightsContentView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        .background(Theme.bg)
     }
 
     private func emptyRangeView(data: InsightsData) -> some View {
@@ -180,7 +183,7 @@ private struct InsightsContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        .background(Theme.bg)
     }
 
     private var firstRunView: some View {
@@ -198,7 +201,7 @@ private struct InsightsContentView: View {
                 .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        .background(Theme.bg)
     }
 }
 

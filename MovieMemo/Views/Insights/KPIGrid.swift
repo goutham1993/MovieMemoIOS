@@ -179,7 +179,7 @@ struct KPICard: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
         .insightDetailsSheet(isPresented: $showDetail, title: detailTitle, body: detailBody, dateRange: dateRange)
