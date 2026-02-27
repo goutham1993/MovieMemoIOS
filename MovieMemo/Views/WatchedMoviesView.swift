@@ -85,6 +85,28 @@ struct WatchedMoviesView: View {
         }
     }
     
+    private var thisMonthCount: Int {
+        let now = Date()
+        let calendar = Calendar.current
+        let year = calendar.component(.year, from: now)
+        let month = calendar.component(.month, from: now)
+        let prefix = String(format: "%04d-%02d", year, month)
+        return filteredEntries.filter { $0.watchedDate.hasPrefix(prefix) }.count
+    }
+    
+    private var lastMonthCount: Int {
+        let now = Date()
+        let calendar = Calendar.current
+        guard let lastMonth = calendar.date(byAdding: .month, value: -1, to: now) else { return 0 }
+        let year = calendar.component(.year, from: lastMonth)
+        let month = calendar.component(.month, from: lastMonth)
+        let prefix = String(format: "%04d-%02d", year, month)
+        return filteredEntries.filter { $0.watchedDate.hasPrefix(prefix) }.count
+    }
+    
+    private var totalCount: Int {
+        filteredEntries.count
+    }
     
     var body: some View {
         NavigationView {
@@ -116,6 +138,12 @@ struct WatchedMoviesView: View {
                             }
                         }
                         .pickerStyle(MenuPickerStyle())
+                    }
+                    
+                    HStack(spacing: 12) {
+                        WatchedStatCard(title: "This Month", count: thisMonthCount)
+                        WatchedStatCard(title: "Last Month", count: lastMonthCount)
+                        WatchedStatCard(title: "Total", count: totalCount)
                     }
                 }
                 .padding(.horizontal)
@@ -414,6 +442,26 @@ struct WatchedMovieRowView: View {
         } else {
             return entry.locationTypeEnum.displayName
         }
+    }
+}
+
+private struct WatchedStatCard: View {
+    let title: String
+    let count: Int
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("\(count)")
+                .font(.title2)
+                .fontWeight(.bold)
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(Color(.systemGray6))
+        .cornerRadius(10)
     }
 }
 
