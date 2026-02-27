@@ -23,14 +23,14 @@ struct WatchedMoviesView: View {
     // Deep-link filter from Insights
     @State private var insightFilterType: String? = nil
     @State private var insightFilterValue: String? = nil
-    
-    // Simple computed property for filtered entries
+
+    // MARK: - Filtered entries
+
     private var filteredEntries: [WatchedEntry] {
-        let _ = refreshTrigger // This ensures the computed property recalculates when refreshTrigger changes
+        let _ = refreshTrigger
         let repository = MovieRepository(modelContext: modelContext)
         var entries = repository.getWatchedEntries(filter: selectedFilter)
 
-        // Apply insight deep-link filter
         if let filterType = insightFilterType, let filterValue = insightFilterValue {
             entries = entries.filter { entry in
                 switch filterType {
@@ -49,7 +49,6 @@ struct WatchedMoviesView: View {
             }
         }
 
-        // Apply search filter
         if !searchText.isEmpty {
             entries = entries.filter { entry in
                 entry.title.localizedCaseInsensitiveContains(searchText) ||
@@ -60,193 +59,226 @@ struct WatchedMoviesView: View {
                 (entry.city?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
-        
-        // Apply sorting
+
         switch sortOption {
         case .dateNewest:
-            return entries.sorted { 
-                if $0.watchedDate == $1.watchedDate {
-                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
-                }
+            return entries.sorted {
+                if $0.watchedDate == $1.watchedDate { return $0.createdAt > $1.createdAt }
                 return $0.watchedDate > $1.watchedDate
             }
         case .dateOldest:
-            return entries.sorted { 
-                if $0.watchedDate == $1.watchedDate {
-                    return $0.createdAt < $1.createdAt // Secondary sort by creation time
-                }
+            return entries.sorted {
+                if $0.watchedDate == $1.watchedDate { return $0.createdAt < $1.createdAt }
                 return $0.watchedDate < $1.watchedDate
             }
         case .ratingHighest:
-            return entries.sorted { 
-                if ($0.rating ?? 0) == ($1.rating ?? 0) {
-                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
-                }
+            return entries.sorted {
+                if ($0.rating ?? 0) == ($1.rating ?? 0) { return $0.createdAt > $1.createdAt }
                 return ($0.rating ?? 0) > ($1.rating ?? 0)
             }
         case .ratingLowest:
-            return entries.sorted { 
-                if ($0.rating ?? 0) == ($1.rating ?? 0) {
-                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
-                }
+            return entries.sorted {
+                if ($0.rating ?? 0) == ($1.rating ?? 0) { return $0.createdAt > $1.createdAt }
                 return ($0.rating ?? 0) < ($1.rating ?? 0)
             }
         case .amountHighest:
-            return entries.sorted { 
-                if ($0.spendCents ?? 0) == ($1.spendCents ?? 0) {
-                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
-                }
+            return entries.sorted {
+                if ($0.spendCents ?? 0) == ($1.spendCents ?? 0) { return $0.createdAt > $1.createdAt }
                 return ($0.spendCents ?? 0) > ($1.spendCents ?? 0)
             }
         case .amountLowest:
-            return entries.sorted { 
-                if ($0.spendCents ?? 0) == ($1.spendCents ?? 0) {
-                    return $0.createdAt > $1.createdAt // Secondary sort by creation time
-                }
+            return entries.sorted {
+                if ($0.spendCents ?? 0) == ($1.spendCents ?? 0) { return $0.createdAt > $1.createdAt }
                 return ($0.spendCents ?? 0) < ($1.spendCents ?? 0)
             }
         }
     }
-    
-    private var thisMonthCount: Int {
-        let now = Date()
-        let calendar = Calendar.current
-        let year = calendar.component(.year, from: now)
-        let month = calendar.component(.month, from: now)
-        let prefix = String(format: "%04d-%02d", year, month)
-        return filteredEntries.filter { $0.watchedDate.hasPrefix(prefix) }.count
-    }
-    
-    private var lastMonthCount: Int {
-        let now = Date()
-        let calendar = Calendar.current
-        guard let lastMonth = calendar.date(byAdding: .month, value: -1, to: now) else { return 0 }
-        let year = calendar.component(.year, from: lastMonth)
-        let month = calendar.component(.month, from: lastMonth)
-        let prefix = String(format: "%04d-%02d", year, month)
-        return filteredEntries.filter { $0.watchedDate.hasPrefix(prefix) }.count
-    }
-    
-    private var totalCount: Int {
-        filteredEntries.count
-    }
-    
-    var body: some View {
-        NavigationView {
-            VStack {
-                // Search and Filter Bar
-                VStack(spacing: 12) {
-                    // Insight deep-link filter chip
-                    if let filterValue = insightFilterValue, let filterType = insightFilterType {
-                        HStack(spacing: 8) {
-                            Image(systemName: filterTypeIcon(filterType))
-                                .font(.caption)
-                                .foregroundStyle(Color.accentColor)
-                            Text("Filtered by: \(filterValue)")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundStyle(Color.accentColor)
-                            Spacer()
-                            Button {
-                                withAnimation(.spring(duration: 0.3)) {
-                                    insightFilterType = nil
-                                    insightFilterValue = nil
-                                    refreshTrigger += 1
-                                }
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.secondary)
-                                    .font(.subheadline)
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
 
-                    // Search Bar
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                        TextField("Search movies...", text: $searchText)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                    }
-                    
-                    // Filter and Sort Controls
-                    HStack {
-                        // Filter Picker
-                        Picker("Filter", selection: $selectedFilter) {
-                            ForEach(WatchedFilter.allCases, id: \.self) { filter in
-                                Text(filter.displayName).tag(filter)
+    // MARK: - Stats
+
+    private var thisMonthCount: Int {
+        let prefix = currentMonthPrefix()
+        return filteredEntries.filter { $0.watchedDate.hasPrefix(prefix) }.count
+    }
+
+    private var lastMonthCount: Int {
+        guard let prefix = lastMonthPrefix() else { return 0 }
+        return filteredEntries.filter { $0.watchedDate.hasPrefix(prefix) }.count
+    }
+
+    private var totalCount: Int { filteredEntries.count }
+
+    // MARK: - Smart insight computations
+
+    private var watchTimeThisMonth: String {
+        let prefix = currentMonthPrefix()
+        let total = filteredEntries
+            .filter { $0.watchedDate.hasPrefix(prefix) }
+            .compactMap { $0.durationMin }
+            .reduce(0, +)
+        guard total > 0 else { return "—" }
+        let h = total / 60; let m = total % 60
+        return h > 0 ? "\(h)h \(m)m" : "\(m)m"
+    }
+
+    private var avgRating: String {
+        let ratings = filteredEntries.compactMap { $0.rating }
+        guard !ratings.isEmpty else { return "—" }
+        let avg = Double(ratings.reduce(0, +)) / Double(ratings.count)
+        return String(format: "%.1f", avg / 2.0)
+    }
+
+    private var topGenre: String {
+        let genres = filteredEntries.compactMap { $0.genre }.filter { !$0.isEmpty }
+        guard !genres.isEmpty else { return "—" }
+        let counts = genres.reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        return counts.max(by: { $0.value < $1.value })?.key ?? "—"
+    }
+
+    // MARK: - Body
+
+    var body: some View {
+        NavigationStack {
+            List {
+                // Controls header section
+                Section {
+                    VStack(spacing: 12) {
+                        // Insight deep-link chip
+                        if let filterValue = insightFilterValue, let filterType = insightFilterType {
+                            HStack(spacing: 8) {
+                                Image(systemName: filterTypeIcon(filterType))
+                                    .font(.caption)
+                                    .foregroundStyle(Color.accentColor)
+                                Text("Filtered by: \(filterValue)")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(Color.accentColor)
+                                Spacer()
+                                Button {
+                                    withAnimation(.spring(duration: 0.3)) {
+                                        insightFilterType = nil
+                                        insightFilterValue = nil
+                                        refreshTrigger += 1
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(.secondary)
+                                        .font(.subheadline)
+                                }
                             }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                            .transition(.move(edge: .top).combined(with: .opacity))
                         }
-                        .pickerStyle(SegmentedPickerStyle())
-                        
-                        // Sort Picker
-                        Picker("Sort", selection: $sortOption) {
-                            ForEach(SortOption.allCases, id: \.self) { option in
-                                Text(option.displayName).tag(option)
+
+                        // Filter + sort row
+                        HStack(spacing: 12) {
+                            Picker("Filter", selection: $selectedFilter) {
+                                ForEach(WatchedFilter.allCases, id: \.self) { filter in
+                                    Text(filter.displayName).tag(filter)
+                                }
                             }
+                            .pickerStyle(.segmented)
+
+                            Picker("Sort", selection: $sortOption) {
+                                ForEach(SortOption.allCases, id: \.self) { option in
+                                    Text(option.displayName).tag(option)
+                                }
+                            }
+                            .pickerStyle(.menu)
                         }
-                        .pickerStyle(MenuPickerStyle())
+
+                        // Unified stats strip
+                        InsightStripView(
+                            thisMonth: thisMonthCount,
+                            lastMonth: lastMonthCount,
+                            total: totalCount
+                        )
+
+                        // Smart insight mini row
+                        InsightMiniRow(
+                            watchTime: watchTimeThisMonth,
+                            avgRating: avgRating,
+                            topGenre: topGenre
+                        )
                     }
-                    
-                    HStack(spacing: 12) {
-                        WatchedStatCard(title: "This Month", count: thisMonthCount)
-                        WatchedStatCard(title: "Last Month", count: lastMonthCount)
-                        WatchedStatCard(title: "Total", count: totalCount)
-                    }
+                    .padding(.vertical, 4)
                 }
-                .padding(.horizontal)
-                
-                // Movies List
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
+                // Movie rows
                 if filteredEntries.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "film")
-                            .font(.system(size: 50))
-                            .foregroundColor(.gray)
-                        Text(searchText.isEmpty ? "No movies watched yet" : "No movies found")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                        if searchText.isEmpty {
-                            Text("Tap the + button to add your first movie!")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
+                    Section {
+                        VStack(spacing: 16) {
+                            Image(systemName: "film")
+                                .font(.system(size: 50))
+                                .foregroundStyle(.secondary)
+                            Text(searchText.isEmpty ? "No movies watched yet" : "No movies found")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                            if searchText.isEmpty {
+                                Text("Tap + to add your first movie")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 60)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 } else {
-                    List {
-                        ForEach(filteredEntries, id: \.id) { entry in
-                            WatchedMovieRowView(entry: entry)
-                                .onTapGesture {
+                    ForEach(filteredEntries, id: \.id) { entry in
+                        WatchedMovieRowView(entry: entry)
+                            .onTapGesture {
+                                editingEntry = entry
+                                showingAddMovie = true
+                            }
+                            .contextMenu {
+                                Button("Edit") {
                                     editingEntry = entry
                                     showingAddMovie = true
                                 }
-                                .contextMenu {
-                                    Button("Edit") {
-                                        editingEntry = entry
-                                        showingAddMovie = true
-                                    }
-                                    Button("Delete", role: .destructive) {
-                                        entryToDelete = entry
-                                        showingDeleteAlert = true
-                                    }
+                                Button("Delete", role: .destructive) {
+                                    entryToDelete = entry
+                                    showingDeleteAlert = true
                                 }
-                        }
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    entryToDelete = entry
+                                    showingDeleteAlert = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                Button {
+                                    editingEntry = entry
+                                    showingAddMovie = true
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.indigo)
+                            }
+                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                     }
-                    .listStyle(PlainListStyle())
                 }
             }
-            .navigationTitle("Watched Movies")
+            .listStyle(.plain)
+            .navigationTitle("Watched")
             .navigationBarTitleDisplayMode(.large)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search movies…")
+            .tint(Color.accentColor)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
+                    Button {
                         editingEntry = nil
                         showingAddMovie = true
-                    }) {
+                    } label: {
                         Image(systemName: "plus")
                     }
                 }
@@ -263,7 +295,6 @@ struct WatchedMoviesView: View {
                         }
                         editingEntry = nil
                         showingAddMovie = false
-                        // Trigger UI refresh
                         refreshTrigger += 1
                     },
                     onCancel: {
@@ -278,7 +309,6 @@ struct WatchedMoviesView: View {
                     if let entry = entryToDelete {
                         let repository = MovieRepository(modelContext: modelContext)
                         repository.deleteWatchedEntry(entry)
-                        // Trigger UI refresh
                         refreshTrigger += 1
                     }
                 }
@@ -287,7 +317,6 @@ struct WatchedMoviesView: View {
             }
         }
         .onAppear {
-            // Refresh data whenever the view appears
             refreshTrigger += 1
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FilterWatchedMovies"))) { notification in
@@ -303,6 +332,19 @@ struct WatchedMoviesView: View {
         }
     }
 
+    // MARK: - Helpers
+
+    private func currentMonthPrefix() -> String {
+        let now = Date(); let cal = Calendar.current
+        return String(format: "%04d-%02d", cal.component(.year, from: now), cal.component(.month, from: now))
+    }
+
+    private func lastMonthPrefix() -> String? {
+        let now = Date(); let cal = Calendar.current
+        guard let last = cal.date(byAdding: .month, value: -1, to: now) else { return nil }
+        return String(format: "%04d-%02d", cal.component(.year, from: last), cal.component(.month, from: last))
+    }
+
     private func filterTypeIcon(_ filterType: String) -> String {
         switch filterType {
         case "genre":       return "tag"
@@ -314,232 +356,231 @@ struct WatchedMoviesView: View {
     }
 }
 
-struct WatchedMovieRowView: View {
-    let entry: WatchedEntry
-    
+// MARK: - Insight Strip
+
+private struct InsightStripView: View {
+    let thisMonth: Int
+    let lastMonth: Int
+    let total: Int
+
+    private var trend: String? {
+        guard lastMonth > 0 else { return nil }
+        let pct = Int(round(Double(thisMonth - lastMonth) / Double(lastMonth) * 100))
+        return pct >= 0 ? "+\(pct)%" : "\(pct)%"
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Top section with title and rating
-            HStack {
-                Text(entry.title)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                if let rating = entry.rating {
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .foregroundColor(.yellow)
-                            .font(.caption)
-                        Text("\(rating)/10")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.brown)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.orange.opacity(0.2))
-                    .cornerRadius(12)
-                }
-            }
-            
-            // Main content area
-            HStack(alignment: .top, spacing: 16) {
-                // Left column - Event details
-                VStack(alignment: .leading, spacing: 8) {
-                    // Date
-                    HStack(spacing: 8) {
-                        Image(systemName: "calendar")
-                            .foregroundColor(.red)
-                            .font(.caption)
-                        Text(formatDate(entry.watchedDate))
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    // Companions
-                    if let companions = entry.companions, !companions.isEmpty {
-                        HStack(spacing: 8) {
-                            Image(systemName: "person.2")
-                                .foregroundColor(.blue)
-                                .font(.caption)
-                            Text("with \(companions)")
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                        }
-                    }
-                    
-                    // Language
-                    HStack(spacing: 8) {
-                        Image(systemName: "globe")
-                            .foregroundColor(.blue)
-                            .font(.caption)
-                        Text("in \(entry.languageEnum.displayName)")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    // Location
-                    HStack(spacing: 8) {
-                        Image(systemName: "location")
-                            .foregroundColor(.red)
-                            .font(.caption)
-                        Text("at \(getLocationText())")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    // Notes
-                    if let notes = entry.notes, !notes.isEmpty {
-                        HStack(spacing: 8) {
-                            Image(systemName: "note.text")
-                                .foregroundColor(.purple)
-                                .font(.caption)
-                            Text(notes)
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                // Right column - Additional info
-                VStack(alignment: .trailing, spacing: 8) {
-                    // Duration
-                    if let duration = entry.durationMin, duration > 0 {
-                        HStack(spacing: 8) {
-                            Image(systemName: "clock")
-                                .foregroundColor(.gray)
-                                .font(.caption)
-                            Text("\(duration) min")
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                        }
-                    }
-                    
-                    // Price
-                    if let spend = entry.spendCents, spend > 0 {
-                        HStack(spacing: 8) {
-                            Image(systemName: "dollarsign.circle")
-                                .foregroundColor(.yellow)
-                                .font(.caption)
-                            Text(entry.formattedSpend)
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                        }
-                    }
-                }
-            }
-            
-            // Bottom section - Tags
-            HStack(spacing: 8) {
-                // Genre tag
-                if let genre = entry.genre, !genre.isEmpty {
-                        Text(genre.lowercased())
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.orange.opacity(0.2))
-                            .foregroundColor(.primary)
-                            .cornerRadius(8)
-                }
-                
-                // Location type tag
-                HStack(spacing: 4) {
-                    Text(entry.locationTypeEnum.icon)
-                        .font(.caption)
-                    Text(entry.locationTypeEnum.displayName)
-                        .font(.caption)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.orange.opacity(0.2))
-                .foregroundColor(.primary)
-                .cornerRadius(8)
-                
-                // Time of day tag
-                Text(entry.timeOfDayEnum.displayName)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.orange.opacity(0.2))
-                    .foregroundColor(.primary)
-                    .cornerRadius(8)
+        HStack {
+            InsightCell(title: "This Month", value: "\(thisMonth)", trend: trend)
+            Divider().frame(height: 36)
+            InsightCell(title: "Last Month", value: "\(lastMonth)", trend: nil)
+            Divider().frame(height: 36)
+            InsightCell(title: "Total", value: "\(total)", trend: nil)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+        .background(.ultraThinMaterial)
+        .cornerRadius(16)
+    }
+}
+
+private struct InsightCell: View {
+    let title: String
+    let value: String
+    let trend: String?
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.title2.weight(.bold))
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let t = trend {
+                Text(t)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(t.hasPrefix("+") ? .green : .red)
             }
         }
-                .padding(16)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(.systemGray4), lineWidth: 1)
-                )
+        .frame(maxWidth: .infinity)
     }
-    
+}
+
+// MARK: - Smart Insight Mini Row
+
+private struct InsightMiniRow: View {
+    let watchTime: String
+    let avgRating: String
+    let topGenre: String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            InsightMiniCell(icon: "clock", value: watchTime, label: "This Month")
+            Divider().frame(height: 32)
+            InsightMiniCell(icon: "star", value: avgRating, label: "Avg Rating")
+            Divider().frame(height: 32)
+            InsightMiniCell(icon: "film", value: topGenre, label: "Top Genre")
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 8)
+        .background(.ultraThinMaterial)
+        .cornerRadius(16)
+    }
+}
+
+private struct InsightMiniCell: View {
+    let icon: String
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundStyle(Color.accentColor)
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Movie Row Card
+
+struct WatchedMovieRowView: View {
+    let entry: WatchedEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Title + rating
+            HStack(alignment: .top) {
+                Text(entry.title)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                if let rating = entry.rating {
+                    RatingBadgeView(rating: rating)
+                }
+            }
+
+            // Metadata labels
+            VStack(alignment: .leading, spacing: 5) {
+                Label(formatDate(entry.watchedDate), systemImage: "calendar")
+
+                if let companions = entry.companions, !companions.isEmpty {
+                    Label("with \(companions)", systemImage: "person.2")
+                }
+
+                Label(entry.languageEnum.displayName, systemImage: "globe")
+                Label(locationText(), systemImage: locationIcon())
+
+                if let duration = entry.durationMin, duration > 0 {
+                    Label(entry.formattedDuration, systemImage: "clock")
+                }
+
+                if let spend = entry.spendCents, spend > 0 {
+                    Label(entry.formattedSpend, systemImage: "dollarsign.circle")
+                }
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .labelStyle(.titleAndIcon)
+
+            // Notes preview
+            if let notes = entry.notes, !notes.isEmpty {
+                Text(notes)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            // Tag pills
+            HStack(spacing: 6) {
+                if let genre = entry.genre, !genre.isEmpty {
+                    TagPill(text: genre.lowercased())
+                }
+                TagPill(text: entry.locationTypeEnum.displayName)
+                TagPill(text: entry.timeOfDayEnum.displayName)
+            }
+        }
+        .padding(16)
+        .background(Color(.systemBackground))
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+    }
+
     private func formatDate(_ dateString: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        if let date = formatter.date(from: dateString) {
-            let displayFormatter = DateFormatter()
-            displayFormatter.dateFormat = "EEEE, MMM d, yyyy"
-            return displayFormatter.string(from: date)
-        }
-        return dateString
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        let display = DateFormatter()
+        display.dateFormat = "EEE, MMM d, yyyy"
+        return display.string(from: date)
     }
-    
-    private func getLocationText() -> String {
+
+    private func locationText() -> String {
         if entry.locationTypeEnum == .theater {
             var parts: [String] = []
-            
-            // Add theater name or default
-            if let theaterName = entry.theaterName, !theaterName.isEmpty {
-                parts.append(theaterName)
-            } else {
-                parts.append("Theater")
-            }
-            
-            // Add city if available
-            if let city = entry.city, !city.isEmpty {
-                parts.append(city)
-            }
-            
-            // Add people count if available
-            if let peopleCount = entry.peopleCount, peopleCount > 0 {
-                parts.append("(\(peopleCount) \(peopleCount == 1 ? "person" : "people"))")
-            }
-            
+            if let name = entry.theaterName, !name.isEmpty { parts.append(name) } else { parts.append("Theater") }
+            if let city = entry.city, !city.isEmpty { parts.append(city) }
+            if let count = entry.peopleCount, count > 0 { parts.append("(\(count) \(count == 1 ? "person" : "people"))") }
             return parts.joined(separator: ", ")
-        } else {
-            return entry.locationTypeEnum.displayName
+        }
+        return entry.locationTypeEnum.displayName
+    }
+
+    private func locationIcon() -> String {
+        switch entry.locationTypeEnum {
+        case .theater: return "building.columns"
+        case .home: return "house"
+        case .friendsHome: return "person.2.fill"
+        case .other: return "mappin"
         }
     }
 }
 
-private struct WatchedStatCard: View {
-    let title: String
-    let count: Int
-    
+// MARK: - Rating Badge
+
+private struct RatingBadgeView: View {
+    let rating: Int
+
     var body: some View {
-        VStack(spacing: 4) {
-            Text("\(count)")
-                .font(.title2)
-                .fontWeight(.bold)
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
+        Text(String(format: "%.1f", Double(rating) / 2.0))
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color.yellow.opacity(0.15))
+            .foregroundStyle(Color(red: 0.8, green: 0.65, blue: 0))
+            .clipShape(Capsule())
     }
 }
+
+// MARK: - Tag Pill
+
+private struct TagPill: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.caption)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.accentColor.opacity(0.1))
+            .foregroundStyle(Color.accentColor)
+            .cornerRadius(8)
+    }
+}
+
+// MARK: - Preview
 
 #Preview {
     WatchedMoviesView()
         .modelContainer(for: [WatchedEntry.self, WatchlistItem.self, Genre.self], inMemory: true)
 }
-

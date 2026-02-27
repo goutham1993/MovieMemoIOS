@@ -115,22 +115,22 @@ struct AddEditMovieView: View {
                 
                 Section("Optional Information") {
                     VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 8) {
-                            ForEach(1...10, id: \.self) { star in
-                                Button(action: {
-                                    rating = star
-                                }) {
-                                    Image(systemName: star <= (rating ?? 0) ? "star.fill" : "star")
+                        HStack(spacing: 10) {
+                            ForEach(1...5, id: \.self) { star in
+                                Button {
+                                    rating = star * 2
+                                } label: {
+                                    Image(systemName: (rating ?? 0) >= star * 2 ? "star.fill" : "star")
                                         .foregroundColor(.yellow)
                                         .font(.title2)
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .buttonStyle(.plain)
                             }
                         }
-                        
+
                         HStack {
-                            if rating != nil {
-                                Text("\(rating!)/10")
+                            if let r = rating {
+                                Text("\(r / 2)/5")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
