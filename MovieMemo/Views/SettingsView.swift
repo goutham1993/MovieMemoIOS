@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+import UserNotifications
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -20,14 +21,22 @@ struct SettingsView: View {
     @State private var successMessage = ""
     @State private var exportFileURL: URL?
     @State private var notificationsEnabled = false
+    @State private var notificationsDeniedBySystem = false
     @State private var notificationTime: Date = {
         var components = DateComponents()
         components.hour = 10
         components.minute = 0
         return Calendar.current.date(from: components) ?? Date()
     }()
-    
-    
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+    }
+
+    private var buildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
     // Custom binding so the action logic only fires on explicit user interaction,
     // not when onAppear silently restores the toggle state from the system.
     private var notificationToggleBinding: Binding<Bool> {
@@ -38,6 +47,7 @@ struct SettingsView: View {
                 if newValue {
                     NotificationManager.shared.requestAuthorization { granted in
                         if granted {
+                            notificationsDeniedBySystem = false
                             NotificationManager.shared.scheduleWeekendReminder(at: notificationTime)
                             let formatter = DateFormatter()
                             formatter.timeStyle = .short
@@ -45,8 +55,7 @@ struct SettingsView: View {
                             showingSuccessAlert = true
                         } else {
                             notificationsEnabled = false
-                            successMessage = "Please enable notifications in Settings to receive reminders."
-                            showingSuccessAlert = true
+                            notificationsDeniedBySystem = true
                         }
                     }
                 } else {
@@ -58,31 +67,54 @@ struct SettingsView: View {
         )
     }
 
+    private func triggerSuccessHaptic() {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+
     var body: some View {
-        NavigationView {
-            List {
+        NavigationStack {
+            Form {
+                // MARK: - Notifications
                 Section("Notifications") {
-                    Toggle("Weekend Watchlist Reminders", isOn: notificationToggleBinding)
-                    
-                    if notificationsEnabled {
-                        DatePicker("Reminder Time", selection: $notificationTime, displayedComponents: .hourAndMinute)
-                            .onChange(of: notificationTime) { _, newTime in
-                                // Update the notification schedule when time changes
-                                NotificationManager.shared.scheduleWeekendReminder(at: newTime)
-                                let formatter = DateFormatter()
-                                formatter.timeStyle = .short
-                                successMessage = "Reminder time updated to \(formatter.string(from: newTime))"
-                                showingSuccessAlert = true
+                    if notificationsDeniedBySystem {
+                        HStack(spacing: 8) {
+                            Label("Notifications disabled in iOS Settings", systemImage: "bell.slash")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Open Settings") {
+                                if let url = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(url)
+                                }
                             }
-                        
-                        Text("You'll receive a reminder every Saturday")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.footnote)
+                        }
+                    } else {
+                        Toggle("Weekend Watchlist Reminders", isOn: notificationToggleBinding)
+
+                        if notificationsEnabled {
+                            DatePicker("Reminder Time",
+                                       selection: $notificationTime,
+                                       displayedComponents: .hourAndMinute)
+                                .datePickerStyle(.compact)
+                                .onChange(of: notificationTime) { _, newTime in
+                                    NotificationManager.shared.scheduleWeekendReminder(at: newTime)
+                                    let formatter = DateFormatter()
+                                    formatter.timeStyle = .short
+                                    successMessage = "Reminder time updated to \(formatter.string(from: newTime))"
+                                    showingSuccessAlert = true
+                                }
+
+                            Text("You'll receive a reminder every Saturday.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-                
-                Section("Data Management") {
-                    Button("Export Data") {
+
+                // MARK: - Data Management
+                Section {
+                    Button {
                         exportFileURL = nil
                         if let data = repository?.exportData() {
                             let formatter = DateFormatter()
@@ -93,50 +125,104 @@ struct SettingsView: View {
                             do {
                                 try data.write(to: tempURL)
                                 exportFileURL = tempURL
+                                triggerSuccessHaptic()
                             } catch {
                                 print("Export write error: \(error)")
                             }
                         }
                         showingExportSheet = true
+                    } label: {
+                        Label("Export Data", systemImage: "square.and.arrow.up")
                     }
-                    .foregroundColor(.blue)
                     .disabled(repository == nil)
-                    
-                    Button("Import Data") {
+
+                    Button {
                         showingImportSheet = true
+                    } label: {
+                        Label("Import Data", systemImage: "square.and.arrow.down")
                     }
-                    .foregroundColor(.blue)
                     .disabled(repository == nil)
+                } header: {
+                    Text("Data Management")
+                } footer: {
+                    Text("Your data stays on your device unless you export it.")
                 }
-                
-                Section("Clear Data") {
-                    Button("Clear All Watched Movies") {
+
+                // MARK: - Danger Zone
+                Section("Danger Zone") {
+                    Button("Clear All Watched Movies", role: .destructive) {
                         showingClearWatchedAlert = true
                     }
-                    .foregroundColor(.red)
                     .disabled(repository == nil)
-                    
-                    Button("Clear All Watchlist Items") {
+
+                    Button("Clear All Watchlist Items", role: .destructive) {
                         showingClearWatchlistAlert = true
                     }
-                    .foregroundColor(.red)
                     .disabled(repository == nil)
                 }
-                
+
+                // MARK: - Premium
+                Section("Premium") {
+                    NavigationLink("Upgrade to Pro") {
+                        VStack(spacing: 12) {
+                            Image(systemName: "star.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundStyle(.yellow)
+                            Text("Pro Features")
+                                .font(.title2.weight(.semibold))
+                            Text("Coming Soon")
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .navigationTitle("Upgrade to Pro")
+                        .navigationBarTitleDisplayMode(.inline)
+                    }
+                }
+
+                // MARK: - About
                 Section("About") {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text("1.0.0")
-                            .foregroundColor(.secondary)
+                        Text(appVersion)
+                            .foregroundStyle(.secondary)
                     }
-                    
+
                     HStack {
                         Text("Build")
                         Spacer()
-                        Text("1")
-                            .foregroundColor(.secondary)
+                        Text(buildNumber)
+                            .foregroundStyle(.secondary)
                     }
+
+                    Link(destination: URL(string: "https://example.com/privacy")!) {
+                        Label("Privacy Policy", systemImage: "hand.raised")
+                    }
+
+                    Link(destination: URL(string: "https://example.com/terms")!) {
+                        Label("Terms of Service", systemImage: "doc.text")
+                    }
+
+                    Button {
+                        if let url = URL(string: "https://apps.apple.com/app/idYOUR_APP_ID") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        Label("Rate MovieMemo", systemImage: "star")
+                    }
+                }
+
+                // MARK: - Brand Footer
+                Section {
+                    VStack(spacing: 6) {
+                        Text("MovieMemo")
+                            .font(.footnote.weight(.medium))
+                        Text("Built with care for mindful movie tracking.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
                 }
             }
             .navigationTitle("Settings")
@@ -145,16 +231,15 @@ struct SettingsView: View {
                 if let fileURL = exportFileURL {
                     ShareSheet(activityItems: [fileURL])
                 } else {
-                    VStack {
+                    VStack(spacing: 16) {
                         Text("Export Failed")
                             .font(.headline)
                         Text("Unable to create export file. Please try again.")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                         Button("Close") {
                             showingExportSheet = false
                         }
-                        .padding()
                     }
                     .padding()
                 }
@@ -163,6 +248,7 @@ struct SettingsView: View {
                 DocumentPicker { url in
                     if let data = try? Data(contentsOf: url) {
                         if repository?.importData(data) == true {
+                            triggerSuccessHaptic()
                             successMessage = "Data imported successfully!"
                             showingSuccessAlert = true
                         } else {
@@ -176,6 +262,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Clear All", role: .destructive) {
                     repository?.clearAllWatchedEntries()
+                    triggerSuccessHaptic()
                     successMessage = "All watched movies have been cleared."
                     showingSuccessAlert = true
                 }
@@ -186,6 +273,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Clear All", role: .destructive) {
                     repository?.clearAllWatchlistItems()
+                    triggerSuccessHaptic()
                     successMessage = "All watchlist items have been cleared."
                     showingSuccessAlert = true
                 }
@@ -199,14 +287,13 @@ struct SettingsView: View {
             }
         }
         .onAppear {
-            // Initialize repository with the environment's modelContext
             if repository == nil {
                 repository = MovieRepository(modelContext: modelContext)
             }
-            
-            // Check notification authorization status
-            NotificationManager.shared.checkAuthorizationStatus { isAuthorized in
-                notificationsEnabled = isAuthorized
+
+            NotificationManager.shared.getAuthorizationStatus { status in
+                notificationsEnabled = (status == .authorized)
+                notificationsDeniedBySystem = (status == .denied)
             }
         }
     }

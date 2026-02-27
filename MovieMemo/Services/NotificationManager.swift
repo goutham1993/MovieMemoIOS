@@ -80,5 +80,14 @@ class NotificationManager {
             }
         }
     }
+    
+    // Returns the raw authorization status for richer UI decisions
+    func getAuthorizationStatus(completion: @escaping (UNAuthorizationStatus) -> Void) {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                completion(settings.authorizationStatus)
+            }
+        }
+    }
 }
 
