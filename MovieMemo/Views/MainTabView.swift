@@ -27,10 +27,10 @@ struct MainTabView: View {
                 }
                 .tag(1)
             
-            StatisticsView()
+            InsightsView()
                 .tabItem {
-                    Image(systemName: "chart.bar")
-                    Text("Statistics")
+                    Image(systemName: "chart.xyaxis.line")
+                    Text("Insights")
                 }
                 .tag(2)
             
@@ -43,8 +43,10 @@ struct MainTabView: View {
         }
         .accentColor(.blue)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToWatchlist"))) { _ in
-            // Switch to watchlist tab when notification is tapped
             selectedTab = 1
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FilterWatchedMovies"))) { _ in
+            selectedTab = 0
         }
     }
 }
