@@ -18,7 +18,7 @@ struct SettingsView: View {
     @State private var showingImportSheet = false
     @State private var showingSuccessAlert = false
     @State private var successMessage = ""
-    @State private var exportData: Data?
+    @State private var exportFileURL: URL?
     @State private var notificationsEnabled = false
     @State private var notificationTime: Date = {
         var components = DateComponents()
@@ -27,46 +27,42 @@ struct SettingsView: View {
         return Calendar.current.date(from: components) ?? Date()
     }()
     
-    private var exportFileURL: URL? {
-        guard let data = exportData else { return nil }
-        let fileName = "MovieMemo_Export_\(Date().timeIntervalSince1970).json"
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-        
-        do {
-            try data.write(to: tempURL)
-            return tempURL
-        } catch {
-            print("Export error: \(error)")
-            return nil
-        }
-    }
     
+    // Custom binding so the action logic only fires on explicit user interaction,
+    // not when onAppear silently restores the toggle state from the system.
+    private var notificationToggleBinding: Binding<Bool> {
+        Binding(
+            get: { notificationsEnabled },
+            set: { newValue in
+                notificationsEnabled = newValue
+                if newValue {
+                    NotificationManager.shared.requestAuthorization { granted in
+                        if granted {
+                            NotificationManager.shared.scheduleWeekendReminder(at: notificationTime)
+                            let formatter = DateFormatter()
+                            formatter.timeStyle = .short
+                            successMessage = "Weekend reminders enabled! You'll get notified every Saturday at \(formatter.string(from: notificationTime))."
+                            showingSuccessAlert = true
+                        } else {
+                            notificationsEnabled = false
+                            successMessage = "Please enable notifications in Settings to receive reminders."
+                            showingSuccessAlert = true
+                        }
+                    }
+                } else {
+                    NotificationManager.shared.cancelAllNotifications()
+                    successMessage = "Weekend reminders disabled."
+                    showingSuccessAlert = true
+                }
+            }
+        )
+    }
+
     var body: some View {
         NavigationView {
             List {
                 Section("Notifications") {
-                    Toggle("Weekend Watchlist Reminders", isOn: $notificationsEnabled)
-                        .onChange(of: notificationsEnabled) { _, newValue in
-                            if newValue {
-                                NotificationManager.shared.requestAuthorization { granted in
-                                    if granted {
-                                        NotificationManager.shared.scheduleWeekendReminder(at: notificationTime)
-                                        let formatter = DateFormatter()
-                                        formatter.timeStyle = .short
-                                        successMessage = "Weekend reminders enabled! You'll get notified every Saturday at \(formatter.string(from: notificationTime))."
-                                        showingSuccessAlert = true
-                                    } else {
-                                        notificationsEnabled = false
-                                        successMessage = "Please enable notifications in Settings to receive reminders."
-                                        showingSuccessAlert = true
-                                    }
-                                }
-                            } else {
-                                NotificationManager.shared.cancelAllNotifications()
-                                successMessage = "Weekend reminders disabled."
-                                showingSuccessAlert = true
-                            }
-                        }
+                    Toggle("Weekend Watchlist Reminders", isOn: notificationToggleBinding)
                     
                     if notificationsEnabled {
                         DatePicker("Reminder Time", selection: $notificationTime, displayedComponents: .hourAndMinute)
@@ -87,7 +83,20 @@ struct SettingsView: View {
                 
                 Section("Data Management") {
                     Button("Export Data") {
-                        exportData = repository?.exportData()
+                        exportFileURL = nil
+                        if let data = repository?.exportData() {
+                            let formatter = DateFormatter()
+                            formatter.dateFormat = "yyyyMMdd_HHmmss"
+                            let timestamp = formatter.string(from: Date())
+                            let tempURL = FileManager.default.temporaryDirectory
+                                .appendingPathComponent("MovieMemo_Export_\(timestamp).json")
+                            do {
+                                try data.write(to: tempURL)
+                                exportFileURL = tempURL
+                            } catch {
+                                print("Export write error: \(error)")
+                            }
+                        }
                         showingExportSheet = true
                     }
                     .foregroundColor(.blue)

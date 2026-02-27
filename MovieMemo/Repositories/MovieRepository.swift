@@ -233,30 +233,87 @@ class MovieRepository: ObservableObject {
     }
     
     func importData(_ data: Data) -> Bool {
+        // Try iOS format first, then fall back to Android format
+        if importIOSData(data) { return true }
+        if importAndroidData(data) { return true }
+        return false
+    }
+
+    private func importIOSData(_ data: Data) -> Bool {
         guard let exportData = try? JSONDecoder().decode(ExportData.self, from: data) else {
             return false
         }
-        
-        // Clear existing data
+
         clearAllWatchedEntries()
         clearAllWatchlistItems()
-        
-        // Import new data
+
         for entryData in exportData.watchedEntries {
-            let entry = entryData.toWatchedEntry()
-            modelContext.insert(entry)
+            modelContext.insert(entryData.toWatchedEntry())
         }
-        
         for itemData in exportData.watchlistItems {
-            let item = itemData.toWatchlistItem()
-            modelContext.insert(item)
+            modelContext.insert(itemData.toWatchlistItem())
         }
-        
         for genreData in exportData.genres {
-            let genre = genreData.toGenre()
-            modelContext.insert(genre)
+            modelContext.insert(genreData.toGenre())
         }
-        
+
+        try? modelContext.save()
+        return true
+    }
+
+    private func importAndroidData(_ data: Data) -> Bool {
+        guard let exportData = try? JSONDecoder().decode(AndroidExportData.self, from: data) else {
+            return false
+        }
+
+        clearAllWatchedEntries()
+        clearAllWatchlistItems()
+
+        for entry in exportData.watchedEntries {
+            let watchedEntry = WatchedEntry(
+                title: entry.title,
+                rating: entry.rating,
+                watchedDate: entry.watchedDate,
+                locationType: LocationType(rawValue: entry.locationType) ?? .home,
+                locationNotes: entry.locationNotes,
+                companions: entry.companions,
+                spendCents: entry.spendCents,
+                durationMin: entry.durationMin,
+                timeOfDay: TimeOfDay(rawValue: entry.timeOfDay) ?? .evening,
+                genre: entry.genre,
+                notes: entry.notes,
+                posterUri: entry.posterUri,
+                language: Language(rawValue: entry.language) ?? .english,
+                theaterName: entry.theaterName,
+                city: entry.city,
+                peopleCount: nil
+            )
+            // Default createdAt to the watched date when not present in Android export
+            if let parsedDate = DateFormatter.isoDateFormatter.date(from: entry.watchedDate) {
+                watchedEntry.createdAt = parsedDate
+            }
+            modelContext.insert(watchedEntry)
+        }
+
+        for item in exportData.watchlistItems {
+            let whereToWatch = item.whereToWatch.map { raw -> String in
+                // Android uses OTT_STREAMING; map to iOS OTT
+                raw == "OTT_STREAMING" ? "OTT" : raw
+            }
+            let watchlistItem = WatchlistItem(
+                title: item.title,
+                notes: item.notes,
+                priority: item.priority,
+                targetDate: nil,
+                language: Language(rawValue: item.language) ?? .english,
+                genre: nil,
+                whereToWatch: whereToWatch
+            )
+            // Android createdAt is milliseconds since epoch
+            watchlistItem.createdAt = Date(timeIntervalSince1970: Double(item.createdAt) / 1000.0)
+            modelContext.insert(watchlistItem)
+        }
+
         try? modelContext.save()
         return true
     }
@@ -279,7 +336,26 @@ struct ExportData: Codable {
     let watchlistItems: [WatchlistItemData]
     let genres: [GenreData]
     let exportDate: Date
-    let version: String = "1.2" // Updated for watchlist genre and whereToWatch fields
+    let version: String
+
+    // Memberwise init used when exporting
+    init(watchedEntries: [WatchedEntryData], watchlistItems: [WatchlistItemData], genres: [GenreData], exportDate: Date) {
+        self.watchedEntries = watchedEntries
+        self.watchlistItems = watchlistItems
+        self.genres = genres
+        self.exportDate = exportDate
+        self.version = "1.2"
+    }
+
+    // Custom decoder so that older exports without a `version` key still parse correctly
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        watchedEntries = try container.decode([WatchedEntryData].self, forKey: .watchedEntries)
+        watchlistItems = try container.decode([WatchlistItemData].self, forKey: .watchlistItems)
+        genres = try container.decode([GenreData].self, forKey: .genres)
+        exportDate = try container.decode(Date.self, forKey: .exportDate)
+        version = try container.decodeIfPresent(String.self, forKey: .version) ?? "1.0"
+    }
 }
 
 // MARK: - Codable Data Structures for Export/Import
@@ -403,6 +479,40 @@ struct GenreData: Codable {
         genre.createdAt = createdAt
         return genre
     }
+}
+
+// MARK: - Android Import Structures
+
+private struct AndroidExportData: Decodable {
+    let watchedEntries: [AndroidWatchedEntry]
+    let watchlistItems: [AndroidWatchlistItem]
+}
+
+private struct AndroidWatchedEntry: Decodable {
+    let title: String
+    let rating: Int?
+    let watchedDate: String
+    let locationType: String
+    let locationNotes: String?
+    let companions: String?
+    let spendCents: Int?
+    let durationMin: Int?
+    let timeOfDay: String
+    let genre: String?
+    let notes: String?
+    let posterUri: String?
+    let language: String
+    let theaterName: String?
+    let city: String?
+}
+
+private struct AndroidWatchlistItem: Decodable {
+    let title: String
+    let notes: String?
+    let priority: Int
+    let createdAt: Int64
+    let language: String
+    let whereToWatch: String?
 }
 
 // MARK: - Extensions
