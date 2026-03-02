@@ -7,10 +7,22 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var subscriptionManager = SubscriptionManager()
+
+    init() {
+        // Remove the heavy iOS 18 floating capsule; keep icon tinting via .tint()
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.backgroundColor = UIColor(Theme.bg).withAlphaComponent(0.95)
+        // Clear the selection indicator so there's no filled pill behind the icon
+        appearance.selectionIndicatorImage = UIImage()
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
 
     var body: some View {
         TabView(selection: $selectedTab) {

@@ -17,15 +17,15 @@ struct PremiumPaywallView: View {
     @Environment(SubscriptionManager.self) private var manager
 
     @State private var selectedID: String = SubscriptionManager.yearlyProductID
-    @State private var heroUnlocked = false
-    @State private var showError    = false
+    @State private var showError: Bool = false
+    @State private var appeared: Bool = false
+    @State private var isPressed: Bool = false
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 scrollBody
 
-                // Error toast
                 if showError, let err = manager.purchaseError {
                     Text(err)
                         .font(.footnote)
@@ -40,7 +40,7 @@ struct PremiumPaywallView: View {
             }
             .animation(.easeInOut(duration: 0.3), value: showError)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color(hex: "1E0B3A"), for: .navigationBar)
+            .toolbarBackground(Theme.bg, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 if let dismiss = onDismiss {
@@ -76,140 +76,108 @@ struct PremiumPaywallView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
                 heroSection
-                featuresSection
+                featureCardsSection
                 pricingSection
+                ctaSection
                 footerSection
             }
         }
         .background(Theme.bg)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
+                appeared = true
+            }
+        }
     }
 
     // MARK: - Hero Section
 
     private var heroSection: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color(hex: "1E0B3A"), Color(hex: "0A1628"), Theme.bg],
-                startPoint: .top,
-                endPoint: .bottom
+            // Soft radial orb
+            RadialGradient(
+                colors: [Color.premiumGold.opacity(0.20), Color.clear],
+                center: .center,
+                startRadius: 10,
+                endRadius: 180
             )
-
-            VStack(spacing: 16) {
-                // Animated icon — lock transitions into the Insights chart icon
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Theme.accent.opacity(0.35), Theme.accent.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 96, height: 96)
-
-                    Image(systemName: heroUnlocked ? "chart.xyaxis.line" : "lock.fill")
-                        .font(.system(size: 40, weight: .medium))
-                        .foregroundStyle(Theme.accent)
-                        .contentTransition(.symbolEffect(.replace))
-                }
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                        withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) {
-                            heroUnlocked = true
-                        }
-                    }
-                }
-
-                VStack(spacing: 8) {
-                    Text("Unlock Insights")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(.white)
-
-                    Text("Your personal cinema analytics — patterns,\nhabits and trends, beautifully visualised.")
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.secondaryText)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(3)
-                        .padding(.horizontal, 28)
-                }
-            }
-            .padding(.top, 36)
-            .padding(.bottom, 40)
-        }
-    }
-
-    // MARK: - Features Section
-
-    private var featuresSection: some View {
-        VStack(spacing: 0) {
-            PaywallSectionDivider(title: "What You'll Unlock")
-                .padding(.bottom, 4)
+            .frame(height: 320)
+            .blur(radius: 30)
 
             VStack(spacing: 0) {
-                PaywallFeatureRow(
-                    icon: "chart.bar.fill",
-                    iconColor: Color(hex: "4A90E2"),
-                    title: "Viewing Trends",
-                    description: "See how your watching evolves month by month with beautiful bar charts.",
-                    preview: AnyView(MiniBarChartPreview(color: Color(hex: "4A90E2")))
-                )
-                PaywallFeatureRow(
-                    icon: "tag.fill",
-                    iconColor: Color(hex: "AF52DE"),
-                    title: "Genre & Language DNA",
-                    description: "Discover your top genres and the languages you watch most.",
-                    preview: AnyView(MiniProgressBarPreview(color: Color(hex: "AF52DE")))
-                )
-                PaywallFeatureRow(
-                    icon: "clock.fill",
-                    iconColor: Theme.accent,
-                    title: "Time & Day Patterns",
-                    description: "Find out whether you're a morning, evening, or weekend watcher.",
-                    preview: AnyView(MiniTimePatternPreview())
-                )
-                PaywallFeatureRow(
-                    icon: "indianrupeesign.circle.fill",
-                    iconColor: Color(hex: "30D158"),
-                    title: "Spending Analytics",
-                    description: "Track your theater spending over time and spot seasonal trends.",
-                    preview: AnyView(MiniBarChartPreview(color: Color(hex: "30D158")))
-                )
-                PaywallFeatureRow(
-                    icon: "flame.fill",
-                    iconColor: Color(hex: "FF6B35"),
-                    title: "Watch Streaks",
-                    description: "Build consecutive weekly watching streaks and celebrate milestones.",
-                    preview: AnyView(MiniStreakPreview())
-                )
-                PaywallFeatureRow(
-                    icon: "sparkles",
-                    iconColor: Color(hex: "FFD700"),
-                    title: "Smart Personalized Insights",
-                    description: "Get AI-crafted narrative observations about your unique viewing habits.",
-                    preview: AnyView(MiniSmartInsightsPreview()),
-                    isLast: true
-                )
+                // Icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: Theme.Radius.small)
+                        .fill(Color.premiumGold.opacity(0.12))
+                        .frame(width: 80, height: 80)
+
+                    Image(systemName: "chart.xyaxis.line")
+                        .font(.system(size: 44, weight: .medium))
+                        .foregroundStyle(Color.premiumGold)
+                }
+
+                Text("Unlock Insights")
+                    .font(AppFont.hero)
+                    .foregroundStyle(.white)
+                    .padding(.top, Theme.Spacing.lg)
+
+                Text("See your movie habits come to life.")
+                    .font(AppFont.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, Theme.Spacing.md)
+                    .padding(.horizontal, Theme.Spacing.xl)
             }
-            .padding(.horizontal, 16)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Radius.surface)
-                    .fill(Theme.surface)
-            )
-            .padding(.horizontal, 16)
+            .padding(.top, Theme.Spacing.xl)
+            .padding(.bottom, Theme.Spacing.xxl)
         }
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 8)
+    }
+
+    // MARK: - Feature Cards Section
+
+    private var featureCardsSection: some View {
+        VStack(spacing: Theme.Spacing.lg) {
+            PaywallFeatureCard(
+                icon: "chart.bar.fill",
+                title: "Your Watching Patterns",
+                description: "Discover when and how often you watch movies.",
+                chartContent: AnyView(WatchingPatternsChartPreview()),
+                accentColor: Color.premiumGold
+            )
+
+            PaywallFeatureCard(
+                icon: "tag.fill",
+                title: "Genre DNA",
+                description: "Uncover the genres and languages that define your taste.",
+                chartContent: AnyView(GenreDNAChartPreview()),
+                accentColor: .white
+            )
+
+            PaywallFeatureCard(
+                icon: "sparkles",
+                title: "Smart Insights",
+                description: "Narrative observations about your unique viewing habits.",
+                chartContent: AnyView(SmartInsightsPreview()),
+                accentColor: Color.premiumGold,
+                personalizationNote: "Last month you watched 14 movies."
+            )
+        }
+        .padding(.horizontal, Theme.Spacing.md)
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 8)
     }
 
     // MARK: - Pricing Section
 
     private var pricingSection: some View {
-        VStack(spacing: 16) {
-            PaywallSectionDivider(title: "Choose Your Plan")
-
-            HStack(spacing: 12) {
+        VStack(spacing: Theme.Spacing.lg) {
+            HStack(spacing: Theme.Spacing.md) {
                 PricingCard(
                     product: manager.monthlyProduct,
                     isSelected: selectedID == SubscriptionManager.monthlyProductID,
-                    isMostPopular: false,
+                    isYearly: false,
                     savingsPercent: nil,
                     fallbackPrice: "$2.99",
                     fallbackSavings: nil,
@@ -223,7 +191,7 @@ struct PremiumPaywallView: View {
                 PricingCard(
                     product: manager.yearlyProduct,
                     isSelected: selectedID == SubscriptionManager.yearlyProductID,
-                    isMostPopular: true,
+                    isYearly: true,
                     savingsPercent: manager.savingsPercent,
                     fallbackPrice: "$19.99",
                     fallbackSavings: 44,
@@ -234,42 +202,8 @@ struct PremiumPaywallView: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, Theme.Spacing.md)
 
-            // Primary CTA
-            Button {
-                Task {
-                    let product = selectedID == SubscriptionManager.yearlyProductID
-                        ? manager.yearlyProduct
-                        : manager.monthlyProduct
-                    if let product {
-                        await manager.purchase(product)
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    if manager.isPurchasing {
-                        ProgressView()
-                            .tint(.black)
-                            .scaleEffect(0.85)
-                    } else {
-                        Image(systemName: "crown.fill")
-                        Text("Get MovieMemo Premium")
-                            .fontWeight(.semibold)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.Radius.button)
-                        .fill(Theme.accent)
-                )
-                .foregroundStyle(.black)
-            }
-            .disabled(manager.isPurchasing)
-            .padding(.horizontal, 16)
-
-            // Introductory offer badge (shown only when trial is available)
             if hasIntroOffer {
                 HStack(spacing: 6) {
                     Image(systemName: "gift.fill")
@@ -277,45 +211,84 @@ struct PremiumPaywallView: View {
                     Text("Free trial available — cancel anytime")
                         .font(.footnote)
                 }
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(Color.premiumGold)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
-                .background(Theme.accent.opacity(0.12), in: Capsule())
+                .background(Color.premiumGold.opacity(0.12), in: Capsule())
             }
         }
-        .padding(.top, 4)
+        .padding(.top, Theme.Spacing.xl)
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 8)
+    }
+
+    // MARK: - CTA Section
+
+    private var ctaSection: some View {
+        Button {
+            isPressed.toggle()
+            Task {
+                let product = selectedID == SubscriptionManager.yearlyProductID
+                    ? manager.yearlyProduct
+                    : manager.monthlyProduct
+                if let product {
+                    await manager.purchase(product)
+                }
+            }
+        } label: {
+            HStack(spacing: Theme.Spacing.sm) {
+                if manager.isPurchasing {
+                    ProgressView()
+                        .tint(.black)
+                        .scaleEffect(0.85)
+                } else {
+                    Text("Unlock Premium")
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(Color.premiumGold)
+            .foregroundStyle(.black)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.button))
+        }
+        .disabled(manager.isPurchasing)
+        .padding(.horizontal, Theme.Spacing.md)
+        .padding(.top, Theme.Spacing.lg)
+        .sensoryFeedback(.impact, trigger: isPressed)
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 8)
     }
 
     // MARK: - Footer Section
 
     private var footerSection: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: Theme.Spacing.sm) {
             Button {
                 Task { await manager.restorePurchases() }
             } label: {
                 Text("Restore Purchases")
-                    .font(.footnote)
-                    .foregroundStyle(Theme.secondaryText)
-                    .underline()
+                    .font(AppFont.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Text("Subscriptions renew automatically. Cancel anytime via\nSettings › Apple ID › Subscriptions.")
-                .font(.caption2)
-                .foregroundStyle(Theme.tertiaryText)
+                .font(AppFont.caption)
+                .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .padding(.horizontal, Theme.Spacing.xl)
 
-            HStack(spacing: 20) {
+            HStack(spacing: Theme.Spacing.xl) {
                 Link("Privacy Policy", destination: URL(string: "https://example.com/privacy")!)
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .font(AppFont.caption)
+                    .foregroundStyle(.white.opacity(0.5))
                 Link("Terms of Service", destination: URL(string: "https://example.com/terms")!)
-                    .font(.caption2)
-                    .foregroundStyle(Theme.tertiaryText)
+                    .font(AppFont.caption)
+                    .foregroundStyle(.white.opacity(0.5))
             }
         }
-        .padding(.vertical, 28)
-        .padding(.bottom, 8)
+        .padding(.top, Theme.Spacing.xl)
+        .padding(.bottom, Theme.Spacing.lg)
     }
 
     // MARK: - Helpers
@@ -328,84 +301,48 @@ struct PremiumPaywallView: View {
     }
 }
 
-// MARK: - Section Divider
+// MARK: - Feature Card
 
-private struct PaywallSectionDivider: View {
-    let title: String
-
-    var body: some View {
-        HStack(spacing: 0) {
-            Rectangle()
-                .fill(Theme.divider)
-                .frame(height: 1)
-
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Theme.tertiaryText)
-                .fixedSize()
-                .padding(.horizontal, 12)
-
-            Rectangle()
-                .fill(Theme.divider)
-                .frame(height: 1)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 24)
-    }
-}
-
-// MARK: - Feature Row
-
-private struct PaywallFeatureRow: View {
+private struct PaywallFeatureCard: View {
     let icon: String
-    let iconColor: Color
     let title: String
     let description: String
-    let preview: AnyView
-    var isLast: Bool = false
+    let chartContent: AnyView
+    let accentColor: Color
+    var personalizationNote: String? = nil
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 14) {
-                // Icon badge
-                ZStack {
-                    RoundedRectangle(cornerRadius: Theme.Radius.icon)
-                        .fill(iconColor.opacity(0.15))
-                        .frame(width: 46, height: 46)
-                    Image(systemName: icon)
-                        .font(.system(size: 20))
-                        .foregroundStyle(iconColor)
-                }
+        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+            HStack(spacing: Theme.Spacing.sm) {
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(accentColor)
+                    .frame(width: 28)
 
-                // Copy
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Theme.primaryText)
-                    Text(description)
-                        .font(.system(size: 12))
-                        .foregroundStyle(Theme.secondaryText)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 4)
-
-                // Mini preview
-                preview
-                    .frame(width: 58, height: 38)
-                    .clipped()
+                Text(title)
+                    .font(AppFont.sectionTitle)
+                    .foregroundStyle(.white)
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 14)
 
-            if !isLast {
-                Rectangle()
-                    .fill(Theme.divider)
-                    .frame(height: 1)
-                    .padding(.leading, 74)
+            Text(description)
+                .font(AppFont.body)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            chartContent
+                .frame(maxWidth: .infinity)
+                .frame(height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            if let note = personalizationNote {
+                Text(note)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.premiumGold)
             }
         }
+        .padding(Theme.Spacing.lg)
+        .background(Color.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card))
     }
 }
 
@@ -414,7 +351,7 @@ private struct PaywallFeatureRow: View {
 private struct PricingCard: View {
     let product: Product?
     let isSelected: Bool
-    let isMostPopular: Bool
+    let isYearly: Bool
     let savingsPercent: Int?
     let fallbackPrice: String
     let fallbackSavings: Int?
@@ -423,167 +360,132 @@ private struct PricingCard: View {
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(spacing: 6) {
-                // "Most Popular" or spacer to align cards
-                if isMostPopular {
-                    Text("MOST POPULAR")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(Theme.bg)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Theme.accent, in: Capsule())
-                } else {
-                    Color.clear.frame(height: 20)
-                }
-
-                Text(product?.displayName ?? (isMostPopular ? "Yearly" : "Monthly"))
-                    .font(.system(size: 12, weight: .semibold))
+            VStack(spacing: Theme.Spacing.sm) {
+                Text(product?.displayName ?? (isYearly ? "Yearly" : "Monthly"))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.secondaryText)
                     .lineLimit(1)
 
-                // Show fallback price immediately; updates to live StoreKit price when available
                 Text(product?.displayPrice ?? fallbackPrice)
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundStyle(isSelected ? Theme.accent : Theme.primaryText)
+                    .font(AppFont.price)
+                    .foregroundStyle(isSelected ? Color.premiumGold : Theme.primaryText)
                     .contentTransition(.numericText())
 
                 Text(period)
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(Theme.tertiaryText)
 
-                // Savings badge for yearly / spacer for monthly
-                if isMostPopular, let pct = savingsPercent ?? fallbackSavings {
+                if isYearly, let pct = savingsPercent ?? fallbackSavings {
                     Text("Save \(pct)%")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Theme.accent)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Theme.accent.opacity(0.15), in: Capsule())
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.premiumGold)
+                        .padding(.horizontal, Theme.Spacing.sm)
+                        .padding(.vertical, 4)
+                        .background(Color.premiumGold.opacity(0.15), in: Capsule())
                 } else {
-                    Color.clear.frame(height: 20)
+                    Color.clear.frame(height: 22)
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
+            .padding(.vertical, isYearly ? 28 : Theme.Spacing.lg)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? Theme.accent.opacity(0.08) : Theme.surface2)
+                RoundedRectangle(cornerRadius: Theme.Radius.card)
+                    .fill(isSelected ? Color.premiumGold.opacity(0.06) : Color.cardBackground)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: Theme.Radius.card)
                             .stroke(
-                                isSelected ? Theme.accent : Theme.divider,
-                                lineWidth: isSelected ? 2 : 1
+                                isYearly && isSelected ? Color.premiumGold : (isSelected ? Color.premiumGold.opacity(0.4) : Theme.divider),
+                                lineWidth: isYearly && isSelected ? 1.5 : 1
                             )
                     )
             )
+            .scaleEffect(isYearly ? 1.05 : 1.0)
         }
         .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 }
 
-// MARK: - Mini Preview: Bar Chart
+// MARK: - Chart Previews
 
-private struct MiniBarChartPreview: View {
-    let color: Color
-    // Heights normalised 0–1; index 3 is the peak bar
-    private let barHeights: [CGFloat] = [0.45, 0.7, 0.55, 0.9, 0.62, 0.8]
+private struct WatchingPatternsChartPreview: View {
+    private let bars: [CGFloat] = [0.4, 0.65, 0.5, 0.85, 0.6, 0.75, 0.45]
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 3) {
-            ForEach(Array(barHeights.enumerated()), id: \.offset) { idx, h in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(color.opacity(idx == 3 ? 1.0 : 0.4))
-                    .frame(width: 6, height: h * 34)
+        HStack(alignment: .bottom, spacing: 6) {
+            ForEach(Array(bars.enumerated()), id: \.offset) { idx, h in
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(idx == 3 ? Color.premiumGold : Color.premiumGold.opacity(0.25))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: h * 64)
             }
         }
+        .padding(.horizontal, Theme.Spacing.sm)
+        .padding(.vertical, Theme.Spacing.sm)
+        .background(Color.white.opacity(0.04))
     }
 }
 
-// MARK: - Mini Preview: Progress Bars (Genre/Language)
-
-private struct MiniProgressBarPreview: View {
-    let color: Color
-    private let fills: [CGFloat] = [0.85, 0.6, 0.38]
+private struct GenreDNAChartPreview: View {
+    private let genres: [(String, CGFloat)] = [
+        ("Drama", 0.85),
+        ("Thriller", 0.62),
+        ("Comedy", 0.44)
+    ]
 
     var body: some View {
-        VStack(spacing: 5) {
-            ForEach(Array(fills.enumerated()), id: \.offset) { idx, fill in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Theme.surface2)
-                        .frame(height: 5)
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(color.opacity(0.5 + (0.5 * (1 - CGFloat(idx) * 0.25))))
-                        .frame(width: fill * 50, height: 5)
+        VStack(spacing: Theme.Spacing.sm) {
+            ForEach(genres, id: \.0) { name, fill in
+                HStack(spacing: Theme.Spacing.sm) {
+                    Text(name)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Theme.secondaryText)
+                        .frame(width: 56, alignment: .leading)
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.white.opacity(0.08))
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.white.opacity(0.55))
+                                .frame(width: geo.size.width * fill)
+                        }
+                    }
+                    .frame(height: 6)
                 }
             }
         }
-        .frame(width: 54)
+        .padding(.horizontal, Theme.Spacing.sm)
+        .padding(.vertical, Theme.Spacing.sm)
+        .background(Color.white.opacity(0.04))
     }
 }
 
-// MARK: - Mini Preview: Time-of-Day Pattern
-
-private struct MiniTimePatternPreview: View {
-    // Evening (index 2) is the highlighted slot
-    private let labels = ["M", "A", "E", "N"]
-    private let highlighted = 2
-
-    var body: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                ForEach(labels.indices, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(i == highlighted ? Theme.accent : Theme.surface2)
-                        .frame(width: 11, height: 18)
-                }
-            }
-            HStack(spacing: 4) {
-                ForEach(labels, id: \.self) { label in
-                    Text(label)
-                        .font(.system(size: 7, weight: .medium))
-                        .foregroundStyle(Theme.tertiaryText)
-                        .frame(width: 11)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Mini Preview: Streak Badge
-
-private struct MiniStreakPreview: View {
-    var body: some View {
-        VStack(spacing: 2) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 22))
-                .foregroundStyle(Color(hex: "FF6B35"))
-            Text("7 wks")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Theme.primaryText)
-        }
-    }
-}
-
-// MARK: - Mini Preview: Smart Insights Bullets
-
-private struct MiniSmartInsightsPreview: View {
-    private let lines = ["Weekends are peak", "Action is your top"]
+private struct SmartInsightsPreview: View {
+    private let lines = [
+        "You watch most movies on weekends.",
+        "Action is your top genre this year."
+    ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
             ForEach(lines, id: \.self) { line in
-                HStack(spacing: 5) {
+                HStack(alignment: .top, spacing: Theme.Spacing.sm) {
                     Circle()
-                        .fill(Color(hex: "FFD700").opacity(0.85))
-                        .frame(width: 4, height: 4)
+                        .fill(Color.premiumGold.opacity(0.7))
+                        .frame(width: 5, height: 5)
+                        .padding(.top, 5)
                     Text(line)
-                        .font(.system(size: 9))
+                        .font(.system(size: 13))
                         .foregroundStyle(Theme.secondaryText)
                         .lineLimit(1)
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, Theme.Spacing.sm)
+        .padding(.vertical, Theme.Spacing.sm)
+        .background(Color.white.opacity(0.04))
     }
 }
 

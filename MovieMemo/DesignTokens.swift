@@ -31,6 +31,24 @@ extension Color {
     }
 }
 
+// MARK: - Premium Color Extensions
+
+extension Color {
+    static let premiumGold       = Color(hex: "D4AF37")
+    static let backgroundPrimary = Color.black
+    static let cardBackground    = Color(white: 0.08)
+}
+
+// MARK: - Premium Typography Scale
+
+enum AppFont {
+    static let hero         = SwiftUI.Font.system(size: 34, weight: .semibold)
+    static let sectionTitle = SwiftUI.Font.system(size: 20, weight: .semibold)
+    static let body         = SwiftUI.Font.system(size: 16, weight: .regular)
+    static let caption      = SwiftUI.Font.system(size: 13, weight: .regular)
+    static let price        = SwiftUI.Font.system(size: 40, weight: .bold)
+}
+
 // MARK: - Theme
 
 enum Theme {
@@ -57,8 +75,15 @@ enum Theme {
     // MARK: Spacing
 
     enum Spacing {
-        static let screenH:   CGFloat = 20
-        static let section:   CGFloat = 28
+        static let xs: CGFloat = 4
+        static let sm: CGFloat = 8
+        static let md: CGFloat = 16
+        static let lg: CGFloat = 24
+        static let xl: CGFloat = 32
+        static let xxl: CGFloat = 48
+        // Legacy tokens
+        static let screenH:    CGFloat = 20
+        static let section:    CGFloat = 28
         static let rowPadding: CGFloat = 14
         static let rowHeight:  CGFloat = 56
     }
@@ -66,11 +91,14 @@ enum Theme {
     // MARK: Radius
 
     enum Radius {
-        static let field:    CGFloat = 12
-        static let surface:  CGFloat = 16
-        static let button:   CGFloat = 12
-        static let icon:     CGFloat = 10
-        static let poster:   CGFloat = 16
+        static let card:   CGFloat = 20
+        static let button: CGFloat = 28
+        static let small:  CGFloat = 16
+        // Legacy tokens
+        static let field:   CGFloat = 12
+        static let surface: CGFloat = 16
+        static let icon:    CGFloat = 10
+        static let poster:  CGFloat = 16
     }
 
     // MARK: Typography
