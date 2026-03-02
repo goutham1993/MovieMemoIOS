@@ -59,22 +59,23 @@ private struct SegmentButton: View {
             HStack(spacing: 4) {
                 if let img = systemImage {
                     Image(systemName: img)
-                        .font(.caption2)
+                        .font(.system(size: 11, weight: .medium))
                 }
                 Text(label)
-                    .font(.caption)
-                    .fontWeight(isSelected ? .semibold : .regular)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
             .frame(maxWidth: .infinity)
+            .frame(height: 36)
+            .padding(.horizontal, 6)
             .background(
                 isSelected
-                    ? Color.accentColor
+                    ? Theme.accent
                     : Color(.tertiarySystemFill),
-                in: RoundedRectangle(cornerRadius: 8)
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
-            .foregroundStyle(isSelected ? .white : .secondary)
+            .foregroundStyle(isSelected ? Color(hex: "0F0F12") : Color.secondary)
         }
         .buttonStyle(.plain)
     }

@@ -431,7 +431,13 @@ enum WatchlistFilter: String, CaseIterable {
     case ott = "OTT"
     case theater = "Theater"
 
-    var displayName: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .all:     return "All"
+        case .ott:     return "Home"
+        case .theater: return "Theater"
+        }
+    }
 }
 
 #Preview {
