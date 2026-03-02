@@ -18,6 +18,7 @@ struct PremiumPaywallView: View {
 
     @State private var selectedID: String = SubscriptionManager.yearlyProductID
     @State private var showError: Bool = false
+    @State private var showProductsUnavailable: Bool = false
     @State private var appeared: Bool = false
     @State private var isPressed: Bool = false
 
@@ -37,8 +38,22 @@ struct PremiumPaywallView: View {
                         .padding(.bottom, 12)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+
+                if showProductsUnavailable {
+                    Text("Products unavailable. Check your StoreKit configuration.")
+                        .font(.footnote)
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Theme.danger.opacity(0.95), in: RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 12)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
             .animation(.easeInOut(duration: 0.3), value: showError)
+            .animation(.easeInOut(duration: 0.3), value: showProductsUnavailable)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Theme.bg, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -227,14 +242,18 @@ struct PremiumPaywallView: View {
     private var ctaSection: some View {
         Button {
             isPressed.toggle()
-            Task {
-                let product = selectedID == SubscriptionManager.yearlyProductID
-                    ? manager.yearlyProduct
-                    : manager.monthlyProduct
-                if let product {
-                    await manager.purchase(product)
+            let product = selectedID == SubscriptionManager.yearlyProductID
+                ? manager.yearlyProduct
+                : manager.monthlyProduct
+            guard let product else {
+                showProductsUnavailable = true
+                Task {
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                    showProductsUnavailable = false
                 }
+                return
             }
+            Task { await manager.purchase(product) }
         } label: {
             HStack(spacing: Theme.Spacing.sm) {
                 if manager.isPurchasing {
@@ -264,6 +283,17 @@ struct PremiumPaywallView: View {
 
     private var footerSection: some View {
         VStack(spacing: Theme.Spacing.sm) {
+            #if targetEnvironment(simulator)
+            Button {
+                manager.debugTogglePremium()
+            } label: {
+                Text("⚙️ [Simulator] Toggle Premium")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.yellow.opacity(0.7))
+            }
+            .padding(.bottom, Theme.Spacing.xs)
+            #endif
+
             Button {
                 Task { await manager.restorePurchases() }
             } label: {

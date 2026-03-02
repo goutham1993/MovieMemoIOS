@@ -26,6 +26,16 @@ final class SubscriptionManager {
     // nonisolated(unsafe) lets deinit cancel the task without actor isolation
     private nonisolated(unsafe) var updatesTask: Task<Void, Never>?
 
+    // MARK: - Debug
+
+    #if targetEnvironment(simulator)
+    /// Instantly grant / revoke premium while running in the simulator.
+    /// Never compiled into device builds.
+    func debugTogglePremium() {
+        isPremium.toggle()
+    }
+    #endif
+
     // MARK: - Init / Deinit
 
     init() {
