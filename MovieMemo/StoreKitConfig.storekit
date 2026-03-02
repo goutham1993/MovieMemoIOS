@@ -1,0 +1,68 @@
+{
+  "identifier" : "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "nonConsumableProducts" : [
+
+  ],
+  "consumableProducts" : [
+
+  ],
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "autoRenewableSubscriptions" : [
+    {
+      "adHocOffers" : [
+
+      ],
+      "codeOffers" : [
+
+      ],
+      "displayPrice" : "2.99",
+      "familySharable" : false,
+      "groupIdentifier" : "moviememo_premium_group",
+      "identifier" : "com.moviememo.premium.monthly",
+      "introductoryOffer" : null,
+      "localizations" : [
+        {
+          "description" : "Full access to all Insights — trends, genres, spending, streaks and smart observations.",
+          "displayName" : "Premium Monthly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.moviememo.premium.monthly",
+      "recurringSubscriptionPeriod" : "P1M",
+      "referenceName" : "Premium Monthly",
+      "subscriptionGroupID" : "moviememo_premium_group",
+      "type" : "AutoRenewable"
+    },
+    {
+      "adHocOffers" : [
+
+      ],
+      "codeOffers" : [
+
+      ],
+      "displayPrice" : "19.99",
+      "familySharable" : false,
+      "groupIdentifier" : "moviememo_premium_group",
+      "identifier" : "com.moviememo.premium.yearly",
+      "introductoryOffer" : null,
+      "localizations" : [
+        {
+          "description" : "Full access to all Insights — trends, genres, spending, streaks and smart observations.",
+          "displayName" : "Premium Yearly",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.moviememo.premium.yearly",
+      "recurringSubscriptionPeriod" : "P1Y",
+      "referenceName" : "Premium Yearly",
+      "subscriptionGroupID" : "moviememo_premium_group",
+      "type" : "AutoRenewable"
+    }
+  ],
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  }
+}

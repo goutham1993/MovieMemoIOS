@@ -290,6 +290,7 @@ struct WatchedMoviesView: View {
                             repository.updateWatchedEntry(entry)
                         } else {
                             repository.addWatchedEntry(entry)
+                            ReviewManager.shared.recordMovieLogged()
                         }
                         movieSheetConfig = nil
                         refreshTrigger += 1

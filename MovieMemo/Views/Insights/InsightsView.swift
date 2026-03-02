@@ -8,9 +8,19 @@ import SwiftData
 
 struct InsightsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var viewModel: InsightsViewModel?
 
     var body: some View {
+        if subscriptionManager.isPremium {
+            premiumContent
+        } else {
+            PremiumPaywallView()
+        }
+    }
+
+    @ViewBuilder
+    private var premiumContent: some View {
         Group {
             if let vm = viewModel {
                 InsightsContentView(viewModel: vm)
@@ -208,4 +218,5 @@ private struct InsightsContentView: View {
 #Preview {
     InsightsView()
         .modelContainer(for: [WatchedEntry.self, WatchlistItem.self, Genre.self], inMemory: true)
+        .environment(SubscriptionManager())
 }

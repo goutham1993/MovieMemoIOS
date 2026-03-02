@@ -12,6 +12,7 @@ import UserNotifications
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var repository: MovieRepository?
     @State private var showingClearWatchedAlert = false
     @State private var showingClearWatchlistAlert = false
@@ -22,6 +23,7 @@ struct SettingsView: View {
     @State private var exportFileURL: URL?
     @State private var notificationsEnabled = false
     @State private var notificationsDeniedBySystem = false
+    @State private var showingPaywall = false
     @State private var notificationTime: Date = {
         var components = DateComponents()
         components.hour = 10
@@ -162,20 +164,65 @@ struct SettingsView: View {
                 }
 
                 // MARK: - Premium
-                Section("Premium") {
-                    NavigationLink("Upgrade to Pro") {
-                        VStack(spacing: 12) {
-                            Image(systemName: "star.circle.fill")
-                                .font(.system(size: 60))
-                                .foregroundStyle(.yellow)
-                            Text("Pro Features")
-                                .font(.title2.weight(.semibold))
-                            Text("Coming Soon")
-                                .foregroundStyle(.secondary)
+                Section {
+                    if subscriptionManager.isPremium {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(Theme.accent.opacity(0.18))
+                                    .frame(width: 36, height: 36)
+                                Image(systemName: "crown.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(Theme.accent)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Premium Active")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(Theme.accent)
+                                Text("All Insights features are unlocked.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(Theme.accent)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .navigationTitle("Upgrade to Pro")
-                        .navigationBarTitleDisplayMode(.inline)
+                        .padding(.vertical, 4)
+                    } else {
+                        Button {
+                            showingPaywall = true
+                        } label: {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Theme.accent.opacity(0.18))
+                                        .frame(width: 36, height: 36)
+                                    Image(systemName: "crown.fill")
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(Theme.accent)
+                                }
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Upgrade to Premium")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(Theme.accent)
+                                    Text("Unlock Insights, trends & analytics.")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    Text("Premium")
+                } footer: {
+                    if !subscriptionManager.isPremium {
+                        Text("Monthly and yearly plans available. Cancel anytime.")
                     }
                 }
 
@@ -204,12 +251,33 @@ struct SettingsView: View {
                     }
 
                     Button {
-                        if let url = URL(string: "https://apps.apple.com/app/idYOUR_APP_ID") {
-                            UIApplication.shared.open(url)
-                        }
+                        ReviewManager.shared.requestReviewDirectly()
                     } label: {
-                        Label("Rate MovieMemo", systemImage: "star")
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.yellow.opacity(0.15))
+                                    .frame(width: 36, height: 36)
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(.yellow)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Rate MovieMemo")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                Text("Enjoying the app? Leave a quick rating.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 4)
                     }
+                    .buttonStyle(.plain)
                 }
 
                 // MARK: - Brand Footer
@@ -229,6 +297,10 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(Theme.bg, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .sheet(isPresented: $showingPaywall) {
+                PremiumPaywallView(onDismiss: { showingPaywall = false })
+                    .environment(subscriptionManager)
+            }
             .sheet(isPresented: $showingExportSheet) {
                 if let fileURL = exportFileURL {
                     ShareSheet(activityItems: [fileURL])
@@ -343,5 +415,7 @@ struct DocumentPicker: UIViewControllerRepresentable {
 #Preview {
     SettingsView()
         .modelContainer(for: [WatchedEntry.self, WatchlistItem.self, Genre.self], inMemory: true)
+        .environment(SubscriptionManager())
+        .preferredColorScheme(.dark)
 }
 

@@ -10,7 +10,8 @@ import SwiftData
 
 struct MainTabView: View {
     @State private var selectedTab = 0
-    
+    @State private var subscriptionManager = SubscriptionManager()
+
     var body: some View {
         TabView(selection: $selectedTab) {
             WatchedMoviesView()
@@ -19,21 +20,23 @@ struct MainTabView: View {
                     Text("Watched")
                 }
                 .tag(0)
-            
+
             WatchlistView()
                 .tabItem {
                     Image(systemName: "list.bullet")
                     Text("Watchlist")
                 }
                 .tag(1)
-            
+
             InsightsView()
                 .tabItem {
-                    Image(systemName: "chart.xyaxis.line")
+                    Image(systemName: subscriptionManager.isPremium
+                          ? "chart.xyaxis.line"
+                          : "lock.fill")
                     Text("Insights")
                 }
                 .tag(2)
-            
+
             SettingsView()
                 .tabItem {
                     Image(systemName: "gear")
@@ -42,10 +45,15 @@ struct MainTabView: View {
                 .tag(3)
         }
         .tint(Theme.accent)
+        .environment(subscriptionManager)
+        .task {
+            await subscriptionManager.loadProducts()
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToWatchlist"))) { _ in
             selectedTab = 1
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FilterWatchedMovies"))) { _ in
+            // Only deep-link into Watched if the user is premium (insights tab is the source)
             selectedTab = 0
         }
     }
@@ -54,4 +62,5 @@ struct MainTabView: View {
 #Preview {
     MainTabView()
         .modelContainer(for: [WatchedEntry.self, WatchlistItem.self, Genre.self], inMemory: true)
+        .preferredColorScheme(.dark)
 }
