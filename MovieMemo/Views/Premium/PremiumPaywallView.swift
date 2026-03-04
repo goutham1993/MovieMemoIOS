@@ -245,6 +245,7 @@ struct PremiumPaywallView: View {
     private var ctaSection: some View {
         Button {
             isPressed.toggle()
+            AnalyticsService.shared.track(.unlockPremiumTapped, properties: ["selected_plan": selectedID])
             let product = selectedID == SubscriptionManager.yearlyProductID
                 ? manager.yearlyProduct
                 : manager.monthlyProduct

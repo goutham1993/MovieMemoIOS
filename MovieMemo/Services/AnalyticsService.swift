@@ -35,10 +35,18 @@ final class AnalyticsService {
         case insightsViewed          = "insights_viewed"
         case statisticsViewed        = "statistics_viewed"
         case paywallViewed           = "paywall_viewed"
+        case unlockPremiumTapped     = "unlock_premium_tapped"
         case purchaseInitiated       = "purchase_initiated"
         case purchaseCompleted       = "purchase_completed"
         case purchaseFailed          = "purchase_failed"
         case restorePurchases        = "restore_purchases_initiated"
+        case dataExported            = "data_exported"
+        case dataImported            = "data_imported"
+        case dataImportFailed        = "data_import_failed"
+        case clearedWatchedMovies    = "cleared_watched_movies"
+        case clearedWatchlistItems   = "cleared_watchlist_items"
+        case upgradeTappedSettings   = "upgrade_tapped_settings"
+        case rateAppTapped           = "rate_app_tapped"
     }
 }
 
