@@ -287,8 +287,14 @@ struct WatchedMoviesView: View {
                     onSave: { entry in
                         let repository = MovieRepository(modelContext: modelContext)
                         if config.entry != nil {
+                            AnalyticsService.shared.track(.movieEdited)
                             repository.updateWatchedEntry(entry)
                         } else {
+                            AnalyticsService.shared.track(.movieAdded, properties: [
+                                "has_rating": entry.rating != nil,
+                                "has_genre": entry.genre != nil && !entry.genre!.isEmpty,
+                                "has_notes": entry.notes != nil && !entry.notes!.isEmpty
+                            ])
                             repository.addWatchedEntry(entry)
                             ReviewManager.shared.recordMovieLogged()
                         }
@@ -305,6 +311,7 @@ struct WatchedMoviesView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
                     if let entry = entryToDelete {
+                        AnalyticsService.shared.track(.movieDeleted)
                         let repository = MovieRepository(modelContext: modelContext)
                         repository.deleteWatchedEntry(entry)
                         refreshTrigger += 1
@@ -315,6 +322,17 @@ struct WatchedMoviesView: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
+        .onChange(of: searchText) { _, newValue in
+            if !newValue.isEmpty {
+                AnalyticsService.shared.track(.searchUsed)
+            }
+        }
+        .onChange(of: selectedFilter) { _, newValue in
+            AnalyticsService.shared.track(.filterApplied, properties: ["filter": newValue.rawValue])
+        }
+        .onChange(of: sortOption) { _, newValue in
+            AnalyticsService.shared.track(.sortChanged, properties: ["sort": newValue.rawValue])
+        }
         .onAppear {
             refreshTrigger += 1
         }

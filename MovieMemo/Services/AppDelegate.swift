@@ -7,10 +7,18 @@
 
 import UIKit
 import UserNotifications
+import PostHog
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        // PostHog analytics
+        let config = PostHogConfig(apiKey: "phc_214gAWhzmoVPUquxsZqtDvriYABDYhXmJ2hihPMLnBN", host: "https://us.i.posthog.com")
+        config.captureScreenViews = false
+        config.captureApplicationLifecycleEvents = false
+        PostHogSDK.shared.setup(config)
+        AnalyticsService.shared.track(.appOpened)
+        
         // Set notification delegate
         UNUserNotificationCenter.current().delegate = self
         

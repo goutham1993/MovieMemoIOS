@@ -61,6 +61,10 @@ struct MainTabView: View {
         .task {
             await subscriptionManager.loadProducts()
         }
+        .onChange(of: selectedTab) { _, newTab in
+            let names = ["watched", "watchlist", "insights", "settings"]
+            AnalyticsService.shared.track(.tabViewed, properties: ["tab": names[newTab]])
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToWatchlist"))) { _ in
             selectedTab = 1
         }

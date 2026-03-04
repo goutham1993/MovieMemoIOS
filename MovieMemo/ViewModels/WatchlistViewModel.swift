@@ -73,7 +73,6 @@ class WatchlistViewModel: ObservableObject {
     func moveToWatched(_ item: WatchlistItem) {
         _ = repository.moveToWatched(item)
         loadData()
-        // You might want to notify the parent view about this change
     }
     
     func refreshData() {

@@ -74,6 +74,8 @@ final class SubscriptionManager {
         purchaseError = nil
         defer { isPurchasing = false }
 
+        AnalyticsService.shared.track(.purchaseInitiated, properties: ["product_id": product.id])
+
         do {
             let result = try await product.purchase()
             switch result {
@@ -81,6 +83,7 @@ final class SubscriptionManager {
                 let transaction = try verify(verification)
                 await transaction.finish()
                 await checkEntitlements()
+                AnalyticsService.shared.track(.purchaseCompleted, properties: ["product_id": product.id])
             case .userCancelled, .pending:
                 break
             @unknown default:
@@ -88,6 +91,7 @@ final class SubscriptionManager {
             }
         } catch {
             purchaseError = error.localizedDescription
+            AnalyticsService.shared.track(.purchaseFailed, properties: ["product_id": product.id, "error": error.localizedDescription])
         }
     }
 
@@ -97,6 +101,8 @@ final class SubscriptionManager {
         isPurchasing = true
         purchaseError = nil
         defer { isPurchasing = false }
+
+        AnalyticsService.shared.track(.restorePurchases)
 
         do {
             try await AppStore.sync()
@@ -118,6 +124,7 @@ final class SubscriptionManager {
             }
         }
         isPremium = hasPremium
+        AnalyticsService.shared.identify(isPremium: hasPremium)
     }
 
     // MARK: - Computed Helpers

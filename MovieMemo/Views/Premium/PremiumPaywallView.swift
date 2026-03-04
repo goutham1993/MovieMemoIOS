@@ -69,6 +69,9 @@ struct PremiumPaywallView: View {
                 }
             }
         }
+        .onAppear {
+            AnalyticsService.shared.track(.paywallViewed)
+        }
         .task {
             if manager.products.isEmpty {
                 await manager.loadProducts()
