@@ -158,7 +158,7 @@ struct CinematicPrimaryButton: View {
 
 // MARK: - Rating Control
 
-/// 5-star rating input. Selected stars use `Theme.accent`, unselected use `Theme.tertiaryText`.
+/// 10-star rating input. Selected stars use `Theme.accent`, unselected use `Theme.tertiaryText`.
 /// Includes a small reset icon button (arrow.counterclockwise) when a rating is set.
 struct RatingControl: View {
     @Binding var rating: Int?
@@ -166,14 +166,14 @@ struct RatingControl: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 16) {
-                ForEach(1...5, id: \.self) { star in
+            HStack(spacing: 8) {
+                ForEach(1...10, id: \.self) { star in
                     Button {
                         let impact = UIImpactFeedbackGenerator(style: .light)
                         impact.impactOccurred()
                         withAnimation(.spring(response: 0.2, dampingFraction: 0.4)) {
                             tappedStar = star
-                            rating = (rating == star * 2) ? nil : star * 2
+                            rating = (rating == star) ? nil : star
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                             withAnimation(.spring(response: 0.3)) {
@@ -181,10 +181,10 @@ struct RatingControl: View {
                             }
                         }
                     } label: {
-                        Image(systemName: (rating ?? 0) >= star * 2 ? "star.fill" : "star")
-                            .font(.system(size: 28))
+                        Image(systemName: (rating ?? 0) >= star ? "star.fill" : "star")
+                            .font(.system(size: 20))
                             .foregroundColor(
-                                (rating ?? 0) >= star * 2
+                                (rating ?? 0) >= star
                                     ? Theme.accent
                                     : Theme.tertiaryText
                             )
@@ -196,7 +196,7 @@ struct RatingControl: View {
 
             if let r = rating {
                 HStack(spacing: 8) {
-                    Text("\(r / 2) out of 5")
+                    Text("\(r) out of 10")
                         .font(Theme.Font.caption)
                         .foregroundColor(Theme.secondaryText)
 

@@ -124,7 +124,7 @@ struct WatchedMoviesView: View {
         let ratings = filteredEntries.compactMap { $0.rating }
         guard !ratings.isEmpty else { return "—" }
         let avg = Double(ratings.reduce(0, +)) / Double(ratings.count)
-        return String(format: "%.1f", avg / 2.0)
+        return String(format: "%.1f", avg)
     }
 
     private var topGenre: String {
@@ -553,7 +553,7 @@ private struct RatingBadgeView: View {
     let rating: Int
 
     var body: some View {
-        Text(String(format: "%.1f", Double(rating) / 2.0))
+        Text(String(format: "%g", Double(rating)))
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
