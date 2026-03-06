@@ -68,8 +68,14 @@ struct FirstMovieFlowView: View {
                     subtitle: "Let's start building your movie journal.",
                     yesLabel: "Yes, I do!",
                     noLabel: "Not right now",
-                    onYes: { showAddMovieSheet = true },
-                    onNo: { transitionToQuestion(.watchlistQuestion) }
+                    onYes: {
+                        AnalyticsService.shared.track(.questionLastMovieAnswered, properties: ["answer": "yes"])
+                        showAddMovieSheet = true
+                    },
+                    onNo: {
+                        AnalyticsService.shared.track(.questionLastMovieAnswered, properties: ["answer": "no"])
+                        transitionToQuestion(.watchlistQuestion)
+                    }
                 )
 
             case .lastMovieCongrats:
@@ -130,6 +136,7 @@ struct FirstMovieFlowView: View {
                 NotificationConfirmContent(
                     dayName: dayName,
                     onEnable: {
+                        AnalyticsService.shared.track(.notificationEnabled, properties: ["day": dayName])
                         NotificationManager.shared.requestAuthorization { granted in
                             if granted {
                                 if let wd = weekday {
@@ -145,6 +152,9 @@ struct FirstMovieFlowView: View {
                     },
                     onSkip: { transitionTo(.finalWelcome) }
                 )
+                .onAppear {
+                    AnalyticsService.shared.track(.notificationPromptSeen)
+                }
 
             case .finalWelcome:
                 FinalWelcomeContent(onFinish: {
@@ -165,6 +175,7 @@ struct FirstMovieFlowView: View {
                         "has_notes": entry.notes != nil && !entry.notes!.isEmpty,
                         "source": "first_movie_flow"
                     ])
+                    AnalyticsService.shared.track(.watchedMovieAdded, properties: ["source": "onboarding"])
                     repository.addWatchedEntry(entry)
                     ReviewManager.shared.recordMovieLogged()
 
@@ -183,6 +194,7 @@ struct FirstMovieFlowView: View {
                 onSave: { item in
                     let repository = MovieRepository(modelContext: modelContext)
                     AnalyticsService.shared.track(.watchlistItemAdded)
+                    AnalyticsService.shared.track(.watchlistMovieAdded, properties: ["source": "onboarding"])
                     repository.addWatchlistItem(item)
 
                     savedItemTitle = item.title
@@ -205,6 +217,7 @@ struct FirstMovieFlowView: View {
                         "has_notes": entry.notes != nil && !entry.notes!.isEmpty,
                         "source": "first_movie_flow_favourite"
                     ])
+                    AnalyticsService.shared.track(.watchedMovieAdded, properties: ["source": "onboarding_favourite"])
                     repository.addWatchedEntry(entry)
                     ReviewManager.shared.recordMovieLogged()
 

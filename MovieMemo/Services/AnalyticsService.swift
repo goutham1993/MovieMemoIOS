@@ -21,7 +21,14 @@ final class AnalyticsService {
 
     enum Event: String {
         case appOpened               = "app_opened"
+        case onboardingStarted       = "onboarding_started"
         case onboardingCompleted     = "onboarding_completed"
+        case onboardingAbandoned     = "onboarding_abandoned_step"
+        case questionLastMovieAnswered = "question_last_movie_answered"
+        case watchedMovieAdded       = "watched_movie_added"
+        case watchlistMovieAdded     = "watchlist_movie_added"
+        case notificationPromptSeen  = "notification_prompt_seen"
+        case notificationEnabled     = "notification_enabled"
         case movieAdded              = "movie_added"
         case movieEdited             = "movie_edited"
         case movieDeleted            = "movie_deleted"
