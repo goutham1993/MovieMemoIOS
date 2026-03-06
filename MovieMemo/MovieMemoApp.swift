@@ -7,10 +7,15 @@
 
 import SwiftUI
 import SwiftData
+import RevenueCat
 
 @main
 struct MovieMemoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
+    init() {
+        Purchases.configure(withAPIKey: "test_wseesWUhiwJaKWOismFanmJtHnK")
+    }
     
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([

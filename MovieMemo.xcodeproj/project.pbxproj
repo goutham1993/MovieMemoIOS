@@ -195,6 +195,10 @@
 			);
 			mainGroup = 23C1C5A92EADB44900F16278;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				23F7C3C92F5A825400B7603D /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
+				23F7C3CA2F5A85D700B7603D /* XCRemoteSwiftPackageReference "purchases-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 23C1C5B32EADB44900F16278 /* Products */;
 			projectDirPath = "";
@@ -623,6 +627,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		23F7C3C92F5A825400B7603D /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.60.0;
+			};
+		};
+		23F7C3CA2F5A85D700B7603D /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.60.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 	};
 	rootObject = 23C1C5AA2EADB44900F16278 /* Project object */;
 }

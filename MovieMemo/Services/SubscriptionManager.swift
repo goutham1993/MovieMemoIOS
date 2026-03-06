@@ -6,6 +6,7 @@
 import Foundation
 import StoreKit
 import Observation
+import RevenueCat
 
 @Observable
 @MainActor
@@ -110,15 +111,12 @@ final class SubscriptionManager {
     // MARK: - Entitlement Check
 
     func checkEntitlements() async {
-        var hasPremium = false
-        for id in [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID] {
-            if let result = await Transaction.currentEntitlement(for: id),
-               case .verified = result {
-                hasPremium = true
-                break
-            }
+        do {
+            let customerInfo = try await Purchases.shared.customerInfo()
+            isPremium = customerInfo.entitlements.all["MovieMemo Pro"]?.isActive == true
+        } catch {
+            print("[SubscriptionManager] Failed to check entitlements: \(error)")
         }
-        isPremium = hasPremium
     }
 
     // MARK: - Computed Helpers
