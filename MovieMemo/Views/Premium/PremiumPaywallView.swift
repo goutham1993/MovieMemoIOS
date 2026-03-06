@@ -381,12 +381,14 @@ private struct PaywallFeatureCard: View {
                 Text(title)
                     .font(AppFont.sectionTitle)
                     .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
             }
 
             Text(description)
                 .font(AppFont.body)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
+                .fixedSize(horizontal: false, vertical: true)
 
             chartContent
                 .frame(maxWidth: .infinity)
