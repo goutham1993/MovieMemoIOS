@@ -161,7 +161,7 @@ struct MonthBucket: Identifiable, Equatable {
         fmt.dateFormat = "yyyy-MM"
         guard let date = fmt.date(from: yearMonth) else { return yearMonth }
         let out = DateFormatter()
-        out.dateFormat = "MMM yy"
+        out.dateFormat = "MMM yyyy"
         return out.string(from: date)
     }
 }
