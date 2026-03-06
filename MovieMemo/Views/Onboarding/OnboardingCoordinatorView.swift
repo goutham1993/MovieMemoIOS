@@ -51,6 +51,7 @@ struct OnboardingCoordinatorView: View {
     }
 
     private func complete() {
+        AnalyticsService.shared.track(.onboardingCompleted)
         hasSeenOnboarding = true
     }
 }

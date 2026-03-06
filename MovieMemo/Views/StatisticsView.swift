@@ -63,6 +63,7 @@ struct StatisticsView: View {
             }
         }
         .onAppear {
+            AnalyticsService.shared.track(.statisticsViewed)
             if viewModel == nil {
                 print("Creating ViewModel...")
                 viewModel = StatisticsViewModel(repository: MovieRepository(modelContext: modelContext))
