@@ -570,14 +570,20 @@ struct WatchedMovieRowView: View {
 private struct RatingBadgeView: View {
     let rating: Int
 
+    private let ratingColor = Color(red: 0.8, green: 0.65, blue: 0)
+
     var body: some View {
-        Text(String(format: "%g", Double(rating)))
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.yellow.opacity(0.15))
-            .foregroundStyle(Color(red: 0.8, green: 0.65, blue: 0))
-            .clipShape(Capsule())
+        HStack(spacing: 3) {
+            Image(systemName: "star.fill")
+                .font(.system(size: 10, weight: .semibold))
+            Text(String(format: "%g", Double(rating)))
+                .font(.caption.weight(.bold))
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(ratingColor.opacity(0.15))
+        .foregroundStyle(ratingColor)
+        .clipShape(Capsule())
     }
 }
 
