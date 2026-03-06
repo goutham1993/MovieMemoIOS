@@ -52,6 +52,9 @@ final class AnalyticsService {
         case clearedWatchlistItems   = "cleared_watchlist_items"
         case upgradeTappedSettings   = "upgrade_tapped_settings"
         case rateAppTapped           = "rate_app_tapped"
+        case firstMovieFlowStarted   = "first_movie_flow_started"
+        case firstMovieFlowCompleted  = "first_movie_flow_completed"
+        case firstMovieFlowSkipped    = "first_movie_flow_skipped"
     }
 }
 
