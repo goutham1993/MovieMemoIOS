@@ -6,13 +6,30 @@
 import SwiftUI
 import SwiftData
 
+private enum FlowStep {
+    case lastMovieQuestion
+    case watchlistQuestion
+    case favouriteQuestion
+    case congratulations
+    case skipped
+}
+
+private enum CongratsType {
+    case watched
+    case watchlist
+    case favourite
+}
+
 struct FirstMovieFlowView: View {
     @AppStorage("hasCompletedFirstMovieFlow") private var hasCompletedFirstMovieFlow = false
     @Environment(\.modelContext) private var modelContext
 
-    @State private var step: FlowStep = .question
+    @State private var step: FlowStep = .lastMovieQuestion
     @State private var showAddMovieSheet = false
-    @State private var savedMovieTitle: String?
+    @State private var showAddWatchlistSheet = false
+    @State private var showAddFavouriteSheet = false
+    @State private var savedItemTitle: String?
+    @State private var congratsType: CongratsType = .watched
 
     // Staggered animation state
     @State private var iconVisible = false
@@ -20,23 +37,48 @@ struct FirstMovieFlowView: View {
     @State private var subtitleVisible = false
     @State private var buttonsVisible = false
 
-    private enum FlowStep {
-        case question
-        case congratulations
-        case skipped
-    }
-
     var body: some View {
         ZStack {
             CinematicBackgroundView()
 
             switch step {
-            case .question:
-                questionView
+            case .lastMovieQuestion:
+                questionView(
+                    icon: "film.stack",
+                    title: "Do you remember the\nlast movie you watched?",
+                    subtitle: "Let's start building your movie journal.",
+                    yesLabel: "Yes, I do!",
+                    noLabel: "Not right now",
+                    onYes: { showAddMovieSheet = true },
+                    onNo: { transitionToQuestion(.watchlistQuestion) }
+                )
+            case .watchlistQuestion:
+                questionView(
+                    icon: "text.badge.star",
+                    title: "Any movie you'd like\nto watch next?",
+                    subtitle: "Start your watchlist with one pick.",
+                    yesLabel: "Yes, I have one!",
+                    noLabel: "Not really",
+                    onYes: { showAddWatchlistSheet = true },
+                    onNo: { transitionToQuestion(.favouriteQuestion) }
+                )
+            case .favouriteQuestion:
+                questionView(
+                    icon: "heart.fill",
+                    title: "Do you have a\nfavourite movie?",
+                    subtitle: "Every great collection starts with a favourite.",
+                    yesLabel: "Yes!",
+                    noLabel: "Skip for now",
+                    onYes: { showAddFavouriteSheet = true },
+                    onNo: {
+                        AnalyticsService.shared.track(.firstMovieFlowSkipped)
+                        transitionTo(.skipped)
+                    }
+                )
             case .congratulations:
                 congratulationsView
             case .skipped:
-                skippedView
+                SkippedContent(onDismiss: completeFlow)
             }
         }
         .preferredColorScheme(.dark)
@@ -54,15 +96,55 @@ struct FirstMovieFlowView: View {
                     repository.addWatchedEntry(entry)
                     ReviewManager.shared.recordMovieLogged()
 
-                    savedMovieTitle = entry.title
+                    savedItemTitle = entry.title
+                    congratsType = .watched
                     showAddMovieSheet = false
-
                     AnalyticsService.shared.track(.firstMovieFlowCompleted)
                     transitionTo(.congratulations)
                 },
-                onCancel: {
-                    showAddMovieSheet = false
-                }
+                onCancel: { showAddMovieSheet = false }
+            )
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showAddWatchlistSheet) {
+            AddEditWatchlistItemView(
+                item: nil,
+                onSave: { item in
+                    let repository = MovieRepository(modelContext: modelContext)
+                    AnalyticsService.shared.track(.watchlistItemAdded)
+                    repository.addWatchlistItem(item)
+
+                    savedItemTitle = item.title
+                    congratsType = .watchlist
+                    showAddWatchlistSheet = false
+                    AnalyticsService.shared.track(.firstMovieFlowCompleted)
+                    transitionTo(.congratulations)
+                },
+                onCancel: { showAddWatchlistSheet = false }
+            )
+            .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showAddFavouriteSheet) {
+            AddEditMovieView(
+                entry: nil,
+                onSave: { entry in
+                    let repository = MovieRepository(modelContext: modelContext)
+                    AnalyticsService.shared.track(.movieAdded, properties: [
+                        "has_rating": entry.rating != nil,
+                        "has_genre": entry.genre != nil && !entry.genre!.isEmpty,
+                        "has_notes": entry.notes != nil && !entry.notes!.isEmpty,
+                        "source": "first_movie_flow_favourite"
+                    ])
+                    repository.addWatchedEntry(entry)
+                    ReviewManager.shared.recordMovieLogged()
+
+                    savedItemTitle = entry.title
+                    congratsType = .favourite
+                    showAddFavouriteSheet = false
+                    AnalyticsService.shared.track(.firstMovieFlowCompleted)
+                    transitionTo(.congratulations)
+                },
+                onCancel: { showAddFavouriteSheet = false }
             )
             .preferredColorScheme(.dark)
         }
@@ -72,13 +154,21 @@ struct FirstMovieFlowView: View {
         }
     }
 
-    // MARK: - Question Step
+    // MARK: - Reusable Question View
 
-    private var questionView: some View {
+    private func questionView(
+        icon: String,
+        title: String,
+        subtitle: String,
+        yesLabel: String,
+        noLabel: String,
+        onYes: @escaping () -> Void,
+        onNo: @escaping () -> Void
+    ) -> some View {
         VStack(spacing: 0) {
             Spacer()
 
-            Image(systemName: "film.stack")
+            Image(systemName: icon)
                 .font(.system(size: 64, weight: .thin))
                 .foregroundColor(.premiumGold)
                 .padding(.bottom, Theme.Spacing.xl)
@@ -86,14 +176,14 @@ struct FirstMovieFlowView: View {
                 .offset(y: iconVisible ? 0 : 12)
 
             VStack(spacing: Theme.Spacing.sm) {
-                Text("Do you remember the\nlast movie you watched?")
+                Text(title)
                     .font(AppFont.hero)
                     .foregroundColor(Theme.primaryText)
                     .multilineTextAlignment(.center)
                     .opacity(titleVisible ? 1 : 0)
                     .offset(y: titleVisible ? 0 : 12)
 
-                Text("Let's start building your movie journal.")
+                Text(subtitle)
                     .font(AppFont.body)
                     .foregroundColor(Theme.secondaryText)
                     .multilineTextAlignment(.center)
@@ -105,19 +195,18 @@ struct FirstMovieFlowView: View {
             Spacer()
 
             VStack(spacing: 12) {
-                CinematicPrimaryButton("Yes, I do!") {
+                CinematicPrimaryButton(yesLabel) {
                     let impact = UIImpactFeedbackGenerator(style: .medium)
                     impact.impactOccurred()
-                    showAddMovieSheet = true
+                    onYes()
                 }
 
                 Button {
                     let impact = UIImpactFeedbackGenerator(style: .light)
                     impact.impactOccurred()
-                    AnalyticsService.shared.track(.firstMovieFlowSkipped)
-                    transitionTo(.skipped)
+                    onNo()
                 } label: {
-                    Text("Not right now")
+                    Text(noLabel)
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(Theme.secondaryText)
                         .frame(maxWidth: .infinity)
@@ -139,7 +228,7 @@ struct FirstMovieFlowView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                CongratsContent(movieTitle: savedMovieTitle)
+                CongratsContent(itemTitle: savedItemTitle, type: congratsType)
 
                 Spacer()
 
@@ -156,18 +245,22 @@ struct FirstMovieFlowView: View {
         }
     }
 
-    // MARK: - Skipped Step
-
-    private var skippedView: some View {
-        SkippedContent(onDismiss: completeFlow)
-    }
-
     // MARK: - Helpers
 
     private func transitionTo(_ newStep: FlowStep) {
         resetAnimations()
         withAnimation(.easeOut(duration: 0.4)) {
             step = newStep
+        }
+    }
+
+    private func transitionToQuestion(_ newStep: FlowStep) {
+        resetAnimations()
+        withAnimation(.easeOut(duration: 0.4)) {
+            step = newStep
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            animateQuestionIn()
         }
     }
 
@@ -202,12 +295,30 @@ struct FirstMovieFlowView: View {
 // MARK: - Congratulations Content
 
 private struct CongratsContent: View {
-    let movieTitle: String?
+    let itemTitle: String?
+    let type: CongratsType
 
     @State private var iconScale: CGFloat = 0.3
     @State private var iconOpacity: Double = 0
     @State private var textOpacity: Double = 0
     @State private var textOffset: CGFloat = 20
+
+    private var headlineText: String {
+        switch type {
+        case .watched:   return "Your first movie is saved!"
+        case .watchlist: return "Added to your watchlist!"
+        case .favourite: return "Great taste!"
+        }
+    }
+
+    private var subtitleText: String? {
+        guard let title = itemTitle else { return nil }
+        switch type {
+        case .watched:   return "\"\(title)\" is now part of your journal."
+        case .watchlist: return "\"\(title)\" is on your radar."
+        case .favourite: return "\"\(title)\" is now part of your journal."
+        }
+    }
 
     var body: some View {
         VStack(spacing: Theme.Spacing.lg) {
@@ -218,13 +329,13 @@ private struct CongratsContent: View {
                 .opacity(iconOpacity)
 
             VStack(spacing: Theme.Spacing.sm) {
-                Text("Your first movie is saved!")
+                Text(headlineText)
                     .font(AppFont.hero)
                     .foregroundColor(Theme.primaryText)
                     .multilineTextAlignment(.center)
 
-                if let title = movieTitle {
-                    Text("\"\(title)\" is now part of your journal.")
+                if let subtitle = subtitleText {
+                    Text(subtitle)
                         .font(AppFont.body)
                         .foregroundColor(Theme.secondaryText)
                         .multilineTextAlignment(.center)
