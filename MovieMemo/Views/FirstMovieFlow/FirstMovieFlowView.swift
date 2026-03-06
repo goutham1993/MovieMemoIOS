@@ -79,10 +79,13 @@ struct FirstMovieFlowView: View {
                 )
 
             case .lastMovieCongrats:
-                congratulationsView(
-                    nextLabel: "Continue",
-                    onNext: { transitionToQuestion(.watchlistQuestion) }
-                )
+                ZStack {
+                    FirstMovieCelebrationView(
+                        movieTitle: savedItemTitle,
+                        onContinue: { transitionToQuestion(.watchlistQuestion) }
+                    )
+                    ConfettiView()
+                }
 
             case .watchlistQuestion:
                 questionView(
@@ -758,6 +761,243 @@ private struct SkippedContent: View {
                 contentOpacity = 1.0
                 contentOffset = 0
             }
+        }
+    }
+}
+
+// MARK: - First Movie Celebration
+
+private struct FirstMovieCelebrationView: View {
+    let movieTitle: String?
+    let onContinue: () -> Void
+
+    @State private var glowOpacity: Double = 0
+    @State private var shelfOpacity: Double = 0
+    @State private var ticketOffset: CGFloat = -600
+    @State private var ticketRotation: Double = -12
+    @State private var ticketLanded = false
+    @State private var textOpacity: Double = 0
+    @State private var textOffset: CGFloat = 14
+    @State private var buttonOpacity: Double = 0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 0) {
+                MovieTicketView(title: movieTitle)
+                    .offset(y: ticketOffset)
+                    .rotationEffect(.degrees(ticketRotation), anchor: .center)
+                    .shadow(
+                        color: Color.premiumGold.opacity(ticketLanded ? 0.3 : 0),
+                        radius: 30, y: 12
+                    )
+
+                TicketShelfView()
+                    .opacity(shelfOpacity)
+                    .padding(.top, 6)
+            }
+
+            VStack(spacing: 10) {
+                Text("Your movie memories\nhave started.")
+                    .font(AppFont.hero)
+                    .foregroundColor(Theme.primaryText)
+                    .multilineTextAlignment(.center)
+
+                if let title = movieTitle {
+                    Text("\"\(title)\" is on the shelf.")
+                        .font(AppFont.body)
+                        .foregroundColor(Theme.secondaryText)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .padding(.horizontal, Theme.Spacing.xl)
+            .padding(.top, Theme.Spacing.xl)
+            .opacity(textOpacity)
+            .offset(y: textOffset)
+
+            Spacer()
+            Spacer()
+
+            CinematicPrimaryButton("Continue") {
+                let impact = UIImpactFeedbackGenerator(style: .medium)
+                impact.impactOccurred()
+                onContinue()
+            }
+            .padding(.horizontal, Theme.Spacing.xl)
+            .padding(.bottom, Theme.Spacing.xxl)
+            .opacity(buttonOpacity)
+        }
+        .background(
+            RadialGradient(
+                colors: [Color.premiumGold.opacity(0.07), .clear],
+                center: .center,
+                startRadius: 0,
+                endRadius: 300
+            )
+            .opacity(glowOpacity)
+        )
+        .onAppear { runCelebration() }
+    }
+
+    private func runCelebration() {
+        withAnimation(.easeOut(duration: 0.6)) {
+            glowOpacity = 1
+            shelfOpacity = 1
+        }
+
+        withAnimation(.spring(response: 0.75, dampingFraction: 0.55).delay(0.35)) {
+            ticketOffset = 0
+            ticketRotation = 0
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            withAnimation(.easeOut(duration: 0.3)) {
+                ticketLanded = true
+            }
+        }
+
+        withAnimation(.easeOut(duration: 0.6).delay(1.2)) {
+            textOpacity = 1
+            textOffset = 0
+        }
+
+        withAnimation(.easeOut(duration: 0.5).delay(1.7)) {
+            buttonOpacity = 1
+        }
+    }
+}
+
+// MARK: - Movie Ticket
+
+private struct MovieTicketView: View {
+    let title: String?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 10) {
+                Image(systemName: "ticket.fill")
+                    .font(.system(size: 30, weight: .light))
+                    .foregroundColor(.premiumGold)
+
+                if let title {
+                    Text(title)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(Theme.primaryText)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .padding(.horizontal, 20)
+            .frame(maxWidth: .infinity)
+            .frame(height: 140)
+
+            TicketTearLine()
+                .frame(height: 1)
+                .padding(.horizontal, 18)
+
+            VStack(spacing: 3) {
+                Text("ADMIT ONE")
+                    .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                    .foregroundColor(Theme.tertiaryText)
+                    .tracking(3)
+
+                Text("MovieMemo")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color.premiumGold.opacity(0.6))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 60)
+        }
+        .frame(width: 170)
+        .background(Theme.surface)
+        .clipShape(MovieTicketShape())
+        .overlay(
+            MovieTicketShape()
+                .stroke(Color.premiumGold.opacity(0.25), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Ticket Tear Line
+
+private struct TicketTearLine: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.width, y: rect.midY))
+        return path
+    }
+
+    var body: some View {
+        stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+            .foregroundColor(Theme.divider)
+    }
+}
+
+// MARK: - Ticket Shape (with side notches)
+
+private struct MovieTicketShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let cr: CGFloat = 14
+        let nr: CGFloat = 12
+        let tearY: CGFloat = rect.height * 0.70
+
+        var p = Path()
+
+        p.move(to: CGPoint(x: cr, y: 0))
+        p.addLine(to: CGPoint(x: rect.width - cr, y: 0))
+        p.addArc(center: CGPoint(x: rect.width - cr, y: cr),
+                  radius: cr, startAngle: .degrees(-90), endAngle: .degrees(0), clockwise: false)
+
+        p.addLine(to: CGPoint(x: rect.width, y: tearY - nr))
+        p.addArc(center: CGPoint(x: rect.width, y: tearY),
+                  radius: nr, startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: true)
+
+        p.addLine(to: CGPoint(x: rect.width, y: rect.height - cr))
+        p.addArc(center: CGPoint(x: rect.width - cr, y: rect.height - cr),
+                  radius: cr, startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
+
+        p.addLine(to: CGPoint(x: cr, y: rect.height))
+        p.addArc(center: CGPoint(x: cr, y: rect.height - cr),
+                  radius: cr, startAngle: .degrees(90), endAngle: .degrees(180), clockwise: false)
+
+        p.addLine(to: CGPoint(x: 0, y: tearY + nr))
+        p.addArc(center: CGPoint(x: 0, y: tearY),
+                  radius: nr, startAngle: .degrees(90), endAngle: .degrees(-90), clockwise: true)
+
+        p.addLine(to: CGPoint(x: 0, y: cr))
+        p.addArc(center: CGPoint(x: cr, y: cr),
+                  radius: cr, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
+
+        return p
+    }
+}
+
+// MARK: - Glowing Shelf
+
+private struct TicketShelfView: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color.premiumGold.opacity(0.3))
+                .frame(width: 200, height: 4)
+                .blur(radius: 6)
+
+            RoundedRectangle(cornerRadius: 1)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.premiumGold.opacity(0.15),
+                            Color.premiumGold.opacity(0.6),
+                            Color.premiumGold.opacity(0.15)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: 200, height: 2)
         }
     }
 }
