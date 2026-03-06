@@ -6,18 +6,38 @@
 import SwiftUI
 import SwiftData
 
-private enum FlowStep {
+private enum FlowStep: Equatable {
     case lastMovieQuestion
+    case lastMovieCongrats
     case watchlistQuestion
+    case watchlistCongrats
     case favouriteQuestion
-    case congratulations
+    case favouriteCongrats
     case skipped
+    case dayPicker
+    case notificationConfirm(day: String, weekday: Int?)
+    case finalWelcome
 }
 
 private enum CongratsType {
     case watched
     case watchlist
     case favourite
+}
+
+private struct ReminderDay: Identifiable {
+    let id: String
+    let label: String
+    let icon: String
+    let weekday: Int?
+
+    static let all: [ReminderDay] = [
+        ReminderDay(id: "friday",   label: "Friday",      icon: "5.circle",  weekday: 6),
+        ReminderDay(id: "saturday", label: "Saturday",     icon: "6.circle",  weekday: 7),
+        ReminderDay(id: "sunday",   label: "Sunday",       icon: "7.circle",  weekday: 1),
+        ReminderDay(id: "weekdays", label: "Weekdays",     icon: "briefcase", weekday: nil),
+        ReminderDay(id: "random",   label: "Random days",  icon: "shuffle",   weekday: nil),
+    ]
 }
 
 struct FirstMovieFlowView: View {
@@ -31,7 +51,6 @@ struct FirstMovieFlowView: View {
     @State private var savedItemTitle: String?
     @State private var congratsType: CongratsType = .watched
 
-    // Staggered animation state
     @State private var iconVisible = false
     @State private var titleVisible = false
     @State private var subtitleVisible = false
@@ -52,6 +71,13 @@ struct FirstMovieFlowView: View {
                     onYes: { showAddMovieSheet = true },
                     onNo: { transitionToQuestion(.watchlistQuestion) }
                 )
+
+            case .lastMovieCongrats:
+                congratulationsView(
+                    nextLabel: "Continue",
+                    onNext: { transitionToQuestion(.watchlistQuestion) }
+                )
+
             case .watchlistQuestion:
                 questionView(
                     icon: "text.badge.star",
@@ -62,6 +88,13 @@ struct FirstMovieFlowView: View {
                     onYes: { showAddWatchlistSheet = true },
                     onNo: { transitionToQuestion(.favouriteQuestion) }
                 )
+
+            case .watchlistCongrats:
+                congratulationsView(
+                    nextLabel: "Continue",
+                    onNext: { transitionToQuestion(.favouriteQuestion) }
+                )
+
             case .favouriteQuestion:
                 questionView(
                     icon: "heart.fill",
@@ -75,10 +108,49 @@ struct FirstMovieFlowView: View {
                         transitionTo(.skipped)
                     }
                 )
-            case .congratulations:
-                congratulationsView
+
+            case .favouriteCongrats:
+                congratulationsView(
+                    nextLabel: "Continue",
+                    onNext: { transitionToQuestion(.dayPicker) }
+                )
+
             case .skipped:
-                SkippedContent(onDismiss: completeFlow)
+                SkippedContent(onDismiss: { transitionToQuestion(.dayPicker) })
+
+            case .dayPicker:
+                DayPickerContent(
+                    onSelectDay: { day in
+                        transitionTo(.notificationConfirm(day: day.label, weekday: day.weekday))
+                    },
+                    onSkip: { transitionTo(.finalWelcome) }
+                )
+
+            case .notificationConfirm(let dayName, let weekday):
+                NotificationConfirmContent(
+                    dayName: dayName,
+                    onEnable: {
+                        NotificationManager.shared.requestAuthorization { granted in
+                            if granted {
+                                if let wd = weekday {
+                                    NotificationManager.shared.scheduleDayReminder(weekday: wd)
+                                } else if dayName == "Weekdays" {
+                                    for wd in 2...6 {
+                                        NotificationManager.shared.scheduleDayReminder(weekday: wd)
+                                    }
+                                }
+                            }
+                            transitionTo(.finalWelcome)
+                        }
+                    },
+                    onSkip: { transitionTo(.finalWelcome) }
+                )
+
+            case .finalWelcome:
+                FinalWelcomeContent(onFinish: {
+                    AnalyticsService.shared.track(.firstMovieFlowCompleted)
+                    completeFlow()
+                })
             }
         }
         .preferredColorScheme(.dark)
@@ -99,8 +171,7 @@ struct FirstMovieFlowView: View {
                     savedItemTitle = entry.title
                     congratsType = .watched
                     showAddMovieSheet = false
-                    AnalyticsService.shared.track(.firstMovieFlowCompleted)
-                    transitionTo(.congratulations)
+                    transitionTo(.lastMovieCongrats)
                 },
                 onCancel: { showAddMovieSheet = false }
             )
@@ -117,8 +188,7 @@ struct FirstMovieFlowView: View {
                     savedItemTitle = item.title
                     congratsType = .watchlist
                     showAddWatchlistSheet = false
-                    AnalyticsService.shared.track(.firstMovieFlowCompleted)
-                    transitionTo(.congratulations)
+                    transitionTo(.watchlistCongrats)
                 },
                 onCancel: { showAddWatchlistSheet = false }
             )
@@ -141,8 +211,7 @@ struct FirstMovieFlowView: View {
                     savedItemTitle = entry.title
                     congratsType = .favourite
                     showAddFavouriteSheet = false
-                    AnalyticsService.shared.track(.firstMovieFlowCompleted)
-                    transitionTo(.congratulations)
+                    transitionTo(.favouriteCongrats)
                 },
                 onCancel: { showAddFavouriteSheet = false }
             )
@@ -221,9 +290,12 @@ struct FirstMovieFlowView: View {
         }
     }
 
-    // MARK: - Congratulations Step
+    // MARK: - Congratulations View
 
-    private var congratulationsView: some View {
+    private func congratulationsView(
+        nextLabel: String,
+        onNext: @escaping () -> Void
+    ) -> some View {
         ZStack {
             VStack(spacing: 0) {
                 Spacer()
@@ -232,10 +304,10 @@ struct FirstMovieFlowView: View {
 
                 Spacer()
 
-                CinematicPrimaryButton("Let's Go") {
+                CinematicPrimaryButton(nextLabel) {
                     let impact = UIImpactFeedbackGenerator(style: .medium)
                     impact.impactOccurred()
-                    completeFlow()
+                    onNext()
                 }
                 .padding(.horizontal, Theme.Spacing.xl)
                 .padding(.bottom, Theme.Spacing.xxl)
@@ -288,6 +360,270 @@ struct FirstMovieFlowView: View {
             titleVisible = false
             subtitleVisible = false
             buttonsVisible = false
+        }
+    }
+}
+
+// MARK: - Day Picker Content
+
+private struct DayPickerContent: View {
+    let onSelectDay: (ReminderDay) -> Void
+    let onSkip: () -> Void
+
+    @State private var contentOpacity: Double = 0
+    @State private var contentOffset: CGFloat = 12
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: Theme.Spacing.sm) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.system(size: 56, weight: .thin))
+                    .foregroundColor(.premiumGold)
+                    .padding(.bottom, Theme.Spacing.md)
+
+                Text("When do you usually\nwatch movies?")
+                    .font(AppFont.hero)
+                    .foregroundColor(Theme.primaryText)
+                    .multilineTextAlignment(.center)
+
+                Text("We'd love to remind you to log them.")
+                    .font(AppFont.body)
+                    .foregroundColor(Theme.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, Theme.Spacing.xl)
+            .opacity(contentOpacity)
+            .offset(y: contentOffset)
+
+            VStack(spacing: 10) {
+                ForEach(ReminderDay.all) { day in
+                    Button { onSelectDay(day) } label: {
+                        HStack(spacing: 14) {
+                            Image(systemName: day.icon)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.premiumGold)
+                                .frame(width: 24)
+
+                            Text(day.label)
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundColor(Theme.primaryText)
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(Theme.tertiaryText)
+                        }
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 20)
+                        .background(Theme.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous)
+                                .strokeBorder(Theme.divider, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(CinematicScaleButtonStyle())
+                }
+            }
+            .padding(.horizontal, Theme.Spacing.xl)
+            .padding(.top, Theme.Spacing.xl)
+            .opacity(contentOpacity)
+            .offset(y: contentOffset)
+
+            Spacer()
+
+            Button {
+                let impact = UIImpactFeedbackGenerator(style: .light)
+                impact.impactOccurred()
+                onSkip()
+            } label: {
+                Text("Skip")
+                    .font(AppFont.body)
+                    .foregroundColor(Theme.secondaryText)
+                    .frame(height: 44)
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, Theme.Spacing.xl)
+            .opacity(contentOpacity)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5).delay(0.15)) {
+                contentOpacity = 1.0
+                contentOffset = 0
+            }
+        }
+    }
+}
+
+// MARK: - Notification Confirm Content
+
+private struct NotificationConfirmContent: View {
+    let dayName: String
+    let onEnable: () -> Void
+    let onSkip: () -> Void
+
+    @State private var contentOpacity: Double = 0
+    @State private var contentOffset: CGFloat = 12
+
+    private var reminderText: String {
+        if dayName == "Weekdays" {
+            return "We'll remind you on weekdays\nto log your movies"
+        } else if dayName == "Random days" {
+            return "We'll send you a gentle reminder\nto log your movies"
+        }
+        return "We'll remind you on \(dayName)s\nto log your movies"
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: Theme.Spacing.md) {
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 56, weight: .thin))
+                    .foregroundColor(.premiumGold)
+                    .padding(.bottom, Theme.Spacing.sm)
+
+                Text(reminderText)
+                    .font(AppFont.hero)
+                    .foregroundColor(Theme.primaryText)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("A gentle nudge so you never forget\na movie you watched.")
+                    .font(AppFont.body)
+                    .foregroundColor(Theme.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+            }
+            .padding(.horizontal, Theme.Spacing.xl)
+            .opacity(contentOpacity)
+            .offset(y: contentOffset)
+
+            Spacer()
+
+            VStack(spacing: 12) {
+                CinematicPrimaryButton("Enable Reminders") {
+                    let impact = UIImpactFeedbackGenerator(style: .medium)
+                    impact.impactOccurred()
+                    onEnable()
+                }
+
+                Button {
+                    let impact = UIImpactFeedbackGenerator(style: .light)
+                    impact.impactOccurred()
+                    onSkip()
+                } label: {
+                    Text("Not Now")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(Theme.secondaryText)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                }
+                .buttonStyle(CinematicScaleButtonStyle())
+            }
+            .padding(.horizontal, Theme.Spacing.xl)
+            .padding(.bottom, Theme.Spacing.xxl)
+            .opacity(contentOpacity)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5).delay(0.15)) {
+                contentOpacity = 1.0
+                contentOffset = 0
+            }
+        }
+    }
+}
+
+// MARK: - Final Welcome Content
+
+private struct FinalWelcomeContent: View {
+    let onFinish: () -> Void
+
+    @State private var iconScale: CGFloat = 0.3
+    @State private var iconOpacity: Double = 0
+    @State private var textOpacity: Double = 0
+    @State private var textOffset: CGFloat = 20
+    @State private var buttonOpacity: Double = 0
+    @State private var glowOpacity: Double = 0
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [Color.premiumGold.opacity(0.06), .clear],
+                center: .center,
+                startRadius: 0,
+                endRadius: 280
+            )
+            .opacity(glowOpacity)
+            .allowsHitTesting(false)
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 72))
+                    .foregroundStyle(Theme.accent)
+                    .scaleEffect(iconScale)
+                    .opacity(iconOpacity)
+                    .padding(.bottom, Theme.Spacing.lg)
+
+                VStack(spacing: Theme.Spacing.sm) {
+                    Text("You're all set!")
+                        .font(AppFont.hero)
+                        .foregroundColor(Theme.primaryText)
+                        .multilineTextAlignment(.center)
+
+                    Text("Your movie journal is ready.\nStart adding movies whenever you watch them.")
+                        .font(AppFont.body)
+                        .foregroundColor(Theme.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(3)
+                }
+                .padding(.horizontal, Theme.Spacing.xl)
+                .opacity(textOpacity)
+                .offset(y: textOffset)
+
+                Text("Your cinematic journey begins now.")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color.premiumGold.opacity(0.7))
+                    .padding(.top, Theme.Spacing.lg)
+                    .opacity(textOpacity)
+
+                Spacer()
+                Spacer()
+
+                CinematicPrimaryButton("Start Using MovieMemo") {
+                    let impact = UIImpactFeedbackGenerator(style: .medium)
+                    impact.impactOccurred()
+                    onFinish()
+                }
+                .padding(.horizontal, Theme.Spacing.xl)
+                .padding(.bottom, Theme.Spacing.xxl)
+                .opacity(buttonOpacity)
+            }
+        }
+        .onAppear {
+            let notification = UINotificationFeedbackGenerator()
+            notification.notificationOccurred(.success)
+
+            withAnimation(.easeOut(duration: 0.6).delay(0.15)) {
+                glowOpacity = 1
+            }
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.2)) {
+                iconScale = 1.0
+                iconOpacity = 1.0
+            }
+            withAnimation(.easeOut(duration: 0.5).delay(0.45)) {
+                textOpacity = 1.0
+                textOffset = 0
+            }
+            withAnimation(.easeOut(duration: 0.5).delay(0.75)) {
+                buttonOpacity = 1.0
+            }
         }
     }
 }
