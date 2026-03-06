@@ -1,7 +1,21 @@
 {
   "identifier" : "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "nonConsumableProducts" : [
-
+    {
+      "displayPrice" : "49.99",
+      "familySharable" : false,
+      "identifier" : "com.moviememo.premium.lifetime",
+      "localizations" : [
+        {
+          "description" : "One-time purchase. Unlock all Insights forever — no subscription needed.",
+          "displayName" : "Premium Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.moviememo.premium.lifetime",
+      "referenceName" : "Premium Lifetime",
+      "type" : "NonConsumable"
+    }
   ],
   "consumableProducts" : [
 

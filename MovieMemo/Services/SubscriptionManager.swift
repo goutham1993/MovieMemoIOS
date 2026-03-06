@@ -13,8 +13,9 @@ final class SubscriptionManager {
 
     // MARK: - Product IDs
 
-    static let monthlyProductID = "com.moviememo.premium.monthly"
-    static let yearlyProductID  = "com.moviememo.premium.yearly"
+    static let monthlyProductID  = "com.moviememo.premium.monthly"
+    static let yearlyProductID   = "com.moviememo.premium.yearly"
+    static let lifetimeProductID = "com.moviememo.premium.lifetime"
 
     // MARK: - Published State
 
@@ -55,11 +56,11 @@ final class SubscriptionManager {
     func loadProducts() async {
         do {
             let fetched = try await Product.products(
-                for: [Self.monthlyProductID, Self.yearlyProductID]
+                for: [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID]
             )
-            // Sort so monthly comes first, yearly second
+            let order = [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID]
             products = fetched.sorted {
-                $0.id == Self.monthlyProductID && $1.id == Self.yearlyProductID
+                (order.firstIndex(of: $0.id) ?? .max) < (order.firstIndex(of: $1.id) ?? .max)
             }
             await checkEntitlements()
         } catch {
@@ -110,7 +111,7 @@ final class SubscriptionManager {
 
     func checkEntitlements() async {
         var hasPremium = false
-        for id in [Self.monthlyProductID, Self.yearlyProductID] {
+        for id in [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID] {
             if let result = await Transaction.currentEntitlement(for: id),
                case .verified = result {
                 hasPremium = true
@@ -128,6 +129,10 @@ final class SubscriptionManager {
 
     var yearlyProduct: Product? {
         products.first { $0.id == Self.yearlyProductID }
+    }
+
+    var lifetimeProduct: Product? {
+        products.first { $0.id == Self.lifetimeProductID }
     }
 
     /// Approximate whole-number percentage saved by choosing yearly over 12× monthly.

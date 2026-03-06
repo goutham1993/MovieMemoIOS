@@ -188,14 +188,12 @@ struct PremiumPaywallView: View {
 
     private var pricingSection: some View {
         VStack(spacing: Theme.Spacing.lg) {
-            HStack(spacing: Theme.Spacing.md) {
+            HStack(spacing: Theme.Spacing.sm) {
                 PricingCard(
                     product: manager.monthlyProduct,
                     isSelected: selectedID == SubscriptionManager.monthlyProductID,
-                    isYearly: false,
-                    savingsPercent: nil,
+                    badge: nil,
                     fallbackPrice: "$2.99",
-                    fallbackSavings: nil,
                     period: "per month"
                 ) {
                     withAnimation(.easeInOut(duration: 0.15)) {
@@ -206,20 +204,41 @@ struct PremiumPaywallView: View {
                 PricingCard(
                     product: manager.yearlyProduct,
                     isSelected: selectedID == SubscriptionManager.yearlyProductID,
-                    isYearly: true,
-                    savingsPercent: manager.savingsPercent,
+                    badge: manager.savingsPercent.map { "Save \($0)%" } ?? "Save 44%",
                     fallbackPrice: "$19.99",
-                    fallbackSavings: 44,
                     period: "per year"
                 ) {
                     withAnimation(.easeInOut(duration: 0.15)) {
                         selectedID = SubscriptionManager.yearlyProductID
                     }
                 }
+
+                PricingCard(
+                    product: manager.lifetimeProduct,
+                    isSelected: selectedID == SubscriptionManager.lifetimeProductID,
+                    badge: "Best Value",
+                    fallbackPrice: "$49.99",
+                    period: "one time"
+                ) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        selectedID = SubscriptionManager.lifetimeProductID
+                    }
+                }
             }
             .padding(.horizontal, Theme.Spacing.md)
 
-            if hasIntroOffer {
+            if selectedID == SubscriptionManager.lifetimeProductID {
+                HStack(spacing: 6) {
+                    Image(systemName: "infinity")
+                        .font(.footnote)
+                    Text("Pay once, keep forever")
+                        .font(.footnote)
+                }
+                .foregroundStyle(Color.premiumGold)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(Color.premiumGold.opacity(0.12), in: Capsule())
+            } else if hasIntroOffer {
                 HStack(spacing: 6) {
                     Image(systemName: "gift.fill")
                         .font(.footnote)
@@ -239,13 +258,19 @@ struct PremiumPaywallView: View {
 
     // MARK: - CTA Section
 
+    private var selectedProduct: Product? {
+        switch selectedID {
+        case SubscriptionManager.monthlyProductID:  return manager.monthlyProduct
+        case SubscriptionManager.yearlyProductID:   return manager.yearlyProduct
+        case SubscriptionManager.lifetimeProductID: return manager.lifetimeProduct
+        default: return nil
+        }
+    }
+
     private var ctaSection: some View {
         Button {
             isPressed.toggle()
-            let product = selectedID == SubscriptionManager.yearlyProductID
-                ? manager.yearlyProduct
-                : manager.monthlyProduct
-            guard let product else {
+            guard let product = selectedProduct else {
                 showProductsUnavailable = true
                 Task {
                     try? await Task.sleep(nanoseconds: 4_000_000_000)
@@ -261,7 +286,9 @@ struct PremiumPaywallView: View {
                         .tint(.black)
                         .scaleEffect(0.85)
                 } else {
-                    Text("Unlock Premium")
+                    Text(selectedID == SubscriptionManager.lifetimeProductID
+                         ? "Buy Lifetime Access"
+                         : "Unlock Premium")
                         .font(.system(size: 18, weight: .semibold))
                 }
             }
@@ -302,7 +329,9 @@ struct PremiumPaywallView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Text("Subscriptions renew automatically. Cancel anytime via\nSettings › Apple ID › Subscriptions.")
+            Text(selectedID == SubscriptionManager.lifetimeProductID
+                 ? "One-time purchase. No subscription, no renewal."
+                 : "Subscriptions renew automatically. Cancel anytime via\nSettings › Apple ID › Subscriptions.")
                 .font(AppFont.caption)
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
@@ -381,33 +410,38 @@ private struct PaywallFeatureCard: View {
 private struct PricingCard: View {
     let product: Product?
     let isSelected: Bool
-    let isYearly: Bool
-    let savingsPercent: Int?
+    let badge: String?
     let fallbackPrice: String
-    let fallbackSavings: Int?
     let period: String
     let onSelect: () -> Void
+
+    private var hasBadge: Bool { badge != nil }
+    private var displayName: String {
+        product?.displayName ?? fallbackPrice
+    }
 
     var body: some View {
         Button(action: onSelect) {
             VStack(spacing: Theme.Spacing.sm) {
-                Text(product?.displayName ?? (isYearly ? "Yearly" : "Monthly"))
+                Text(product?.displayName ?? period.capitalized)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.secondaryText)
                     .lineLimit(1)
 
                 Text(product?.displayPrice ?? fallbackPrice)
-                    .font(AppFont.price)
+                    .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(isSelected ? Color.premiumGold : Theme.primaryText)
                     .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
 
                 Text(period)
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.tertiaryText)
 
-                if isYearly, let pct = savingsPercent ?? fallbackSavings {
-                    Text("Save \(pct)%")
-                        .font(.system(size: 12, weight: .semibold))
+                if let badge {
+                    Text(badge)
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Color.premiumGold)
                         .padding(.horizontal, Theme.Spacing.sm)
                         .padding(.vertical, 4)
@@ -417,19 +451,18 @@ private struct PricingCard: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, isYearly ? 28 : Theme.Spacing.lg)
+            .padding(.vertical, hasBadge ? Theme.Spacing.lg : Theme.Spacing.md)
             .background(
                 RoundedRectangle(cornerRadius: Theme.Radius.card)
                     .fill(isSelected ? Color.premiumGold.opacity(0.06) : Color.cardBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: Theme.Radius.card)
                             .stroke(
-                                isYearly && isSelected ? Color.premiumGold : (isSelected ? Color.premiumGold.opacity(0.4) : Theme.divider),
-                                lineWidth: isYearly && isSelected ? 1.5 : 1
+                                isSelected ? Color.premiumGold : Theme.divider,
+                                lineWidth: isSelected ? 1.5 : 1
                             )
                     )
             )
-            .scaleEffect(isYearly ? 1.05 : 1.0)
         }
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.2), value: isSelected)
