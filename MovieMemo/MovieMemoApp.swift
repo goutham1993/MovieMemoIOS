@@ -47,6 +47,12 @@ struct MovieMemoApp: App {
 /// Fades between the two with a smooth easeOut transition.
 private struct AppRootView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @AppStorage("hasCompletedFirstMovieFlow") private var hasCompletedFirstMovieFlow = false
+    @Environment(\.modelContext) private var modelContext
+
+    private var shouldShowFirstMovieFlow: Bool {
+        hasSeenOnboarding && !hasCompletedFirstMovieFlow
+    }
 
     var body: some View {
         ZStack {
@@ -54,6 +60,12 @@ private struct AppRootView: View {
                 MainTabView()
                     .zIndex(1)
                     .transition(.opacity)
+                    .fullScreenCover(isPresented: .init(
+                        get: { shouldShowFirstMovieFlow },
+                        set: { if !$0 { hasCompletedFirstMovieFlow = true } }
+                    )) {
+                        FirstMovieFlowView()
+                    }
             } else {
                 OnboardingCoordinatorView()
                     .zIndex(2)
@@ -61,5 +73,16 @@ private struct AppRootView: View {
             }
         }
         .animation(.easeOut(duration: 0.5), value: hasSeenOnboarding)
+        .onAppear { skipFlowForExistingUsers() }
+    }
+
+    /// Existing users who already have movies should never see this flow.
+    private func skipFlowForExistingUsers() {
+        guard hasSeenOnboarding, !hasCompletedFirstMovieFlow else { return }
+        let descriptor = FetchDescriptor<WatchedEntry>()
+        let count = (try? modelContext.fetchCount(descriptor)) ?? 0
+        if count > 0 {
+            hasCompletedFirstMovieFlow = true
+        }
     }
 }

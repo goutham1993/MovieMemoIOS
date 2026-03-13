@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		23F7C26E2F57DF1900B7603D /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 23F7C26D2F57DF1900B7603D /* PostHog */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		23C1C5C22EADB44A00F16278 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				23F7C26E2F57DF1900B7603D /* PostHog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = MovieMemo;
 			packageProductDependencies = (
+				23F7C26D2F57DF1900B7603D /* PostHog */,
 			);
 			productName = MovieMemo;
 			productReference = 23C1C5B22EADB44900F16278 /* MovieMemo.app */;
@@ -196,8 +202,7 @@
 			mainGroup = 23C1C5A92EADB44900F16278;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				23F7C3C92F5A825400B7603D /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
-				23F7C3CA2F5A85D700B7603D /* XCRemoteSwiftPackageReference "purchases-ios" */,
+				23F7C26C2F57DF1900B7603D /* XCRemoteSwiftPackageReference "posthog-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 23C1C5B32EADB44900F16278 /* Products */;
@@ -629,23 +634,23 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		23F7C3C92F5A825400B7603D /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+		23F7C26C2F57DF1900B7603D /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 5.60.0;
-			};
-		};
-		23F7C3CA2F5A85D700B7603D /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 5.60.0;
+				minimumVersion = 3.42.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		23F7C26D2F57DF1900B7603D /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 23F7C26C2F57DF1900B7603D /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 23C1C5AA2EADB44900F16278 /* Project object */;
 }

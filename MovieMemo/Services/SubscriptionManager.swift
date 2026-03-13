@@ -6,7 +6,6 @@
 import Foundation
 import StoreKit
 import Observation
-import RevenueCat
 
 @Observable
 @MainActor
@@ -76,20 +75,37 @@ final class SubscriptionManager {
         purchaseError = nil
         defer { isPurchasing = false }
 
+        let props: [String: Any] = [
+            "product_id": product.id,
+            "price": product.displayPrice,
+            "plan": planLabel(for: product.id)
+        ]
+
+        AnalyticsService.shared.track(.purchaseInitiated, properties: props)
+
         do {
             let result = try await product.purchase()
             switch result {
             case .success(let verification):
-                let transaction = try verify(verification)
-                await transaction.finish()
-                await checkEntitlements()
-            case .userCancelled, .pending:
-                break
+                do {
+                    let transaction = try verify(verification)
+                    await transaction.finish()
+                    await checkEntitlements()
+                    AnalyticsService.shared.track(.purchaseCompleted, properties: props)
+                } catch {
+                    purchaseError = error.localizedDescription
+                    AnalyticsService.shared.track(.purchaseVerifyFailed, properties: props.merging(["error": error.localizedDescription]) { _, new in new })
+                }
+            case .userCancelled:
+                AnalyticsService.shared.track(.purchaseCancelled, properties: props)
+            case .pending:
+                AnalyticsService.shared.track(.purchasePending, properties: props)
             @unknown default:
                 break
             }
         } catch {
             purchaseError = error.localizedDescription
+            AnalyticsService.shared.track(.purchaseFailed, properties: props.merging(["error": error.localizedDescription]) { _, new in new })
         }
     }
 
@@ -100,23 +116,31 @@ final class SubscriptionManager {
         purchaseError = nil
         defer { isPurchasing = false }
 
+        AnalyticsService.shared.track(.restorePurchases)
+
         do {
             try await AppStore.sync()
             await checkEntitlements()
+            AnalyticsService.shared.track(.restoreCompleted, properties: ["is_premium": isPremium])
         } catch {
             purchaseError = error.localizedDescription
+            AnalyticsService.shared.track(.restoreFailed, properties: ["error": error.localizedDescription])
         }
     }
 
     // MARK: - Entitlement Check
 
     func checkEntitlements() async {
-        do {
-            let customerInfo = try await Purchases.shared.customerInfo()
-            isPremium = customerInfo.entitlements.all["MovieMemo Pro"]?.isActive == true
-        } catch {
-            print("[SubscriptionManager] Failed to check entitlements: \(error)")
+        var hasPremium = false
+        for id in [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID] {
+            if let result = await Transaction.currentEntitlement(for: id),
+               case .verified = result {
+                hasPremium = true
+                break
+            }
         }
+        isPremium = hasPremium
+        AnalyticsService.shared.identify(isPremium: hasPremium)
     }
 
     // MARK: - Computed Helpers
@@ -146,6 +170,15 @@ final class SubscriptionManager {
     }
 
     // MARK: - Private
+
+    private func planLabel(for productID: String) -> String {
+        switch productID {
+        case Self.monthlyProductID:  return "monthly"
+        case Self.yearlyProductID:   return "yearly"
+        case Self.lifetimeProductID: return "lifetime"
+        default:                     return "unknown"
+        }
+    }
 
     private func verify<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {

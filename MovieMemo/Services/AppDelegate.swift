@@ -7,24 +7,19 @@
 
 import UIKit
 import UserNotifications
+import PostHog
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        // Set notification delegate
-        UNUserNotificationCenter.current().delegate = self
+        // PostHog analytics
+        let config = PostHogConfig(apiKey: "phc_214gAWhzmoVPUquxsZqtDvriYABDYhXmJ2hihPMLnBN", host: "https://us.i.posthog.com")
+        config.captureScreenViews = false
+        config.captureApplicationLifecycleEvents = false
+        PostHogSDK.shared.setup(config)
+        AnalyticsService.shared.track(.appOpened)
         
-        // Request notification permission and schedule with default time
-        NotificationManager.shared.requestAuthorization { granted in
-            if granted {
-                // Default to 10:00 AM
-                var components = DateComponents()
-                components.hour = 10
-                components.minute = 0
-                let defaultTime = Calendar.current.date(from: components) ?? Date()
-                NotificationManager.shared.scheduleWeekendReminder(at: defaultTime)
-            }
-        }
+        UNUserNotificationCenter.current().delegate = self
         
         return true
     }

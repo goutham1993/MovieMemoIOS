@@ -15,6 +15,8 @@ struct OnboardingCoordinatorView: View {
 
     private let totalPages = 5
 
+    private static let pageNames = ["brand", "track", "patterns", "insights", "premium"]
+
     var body: some View {
         ZStack {
             CinematicBackgroundView()
@@ -33,11 +35,14 @@ struct OnboardingCoordinatorView: View {
                     currentPage: currentPage,
                     totalPages: totalPages,
                     onPrimary: advance,
-                    onSecondary: complete
+                    onSecondary: abandon
                 )
             }
         }
         .preferredColorScheme(.dark)
+        .onAppear {
+            AnalyticsService.shared.track(.onboardingStarted)
+        }
     }
 
     // MARK: - Actions
@@ -50,7 +55,16 @@ struct OnboardingCoordinatorView: View {
         }
     }
 
+    private func abandon() {
+        AnalyticsService.shared.track(.onboardingAbandoned, properties: [
+            "step": currentPage + 1,
+            "step_name": Self.pageNames[currentPage]
+        ])
+        complete()
+    }
+
     private func complete() {
+        AnalyticsService.shared.track(.onboardingCompleted)
         hasSeenOnboarding = true
     }
 }

@@ -67,6 +67,32 @@ class NotificationManager {
         }
     }
     
+    /// Schedule a recurring reminder on a specific weekday (1=Sun, 2=Mon ... 7=Sat) at the given hour.
+    func scheduleDayReminder(weekday: Int, hour: Int = 19, minute: Int = 0) {
+        let id = "day-reminder-\(weekday)"
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
+
+        let content = UNMutableNotificationContent()
+        content.title = "Movie Time! 🎬"
+        content.body = "Did you watch a movie recently? Log it before you forget!"
+        content.sound = .default
+        content.categoryIdentifier = "MOVIE_LOG_REMINDER"
+
+        var dateComponents = DateComponents()
+        dateComponents.weekday = weekday
+        dateComponents.hour = hour
+        dateComponents.minute = minute
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling day reminder: \(error)")
+            }
+        }
+    }
+
     // Cancel all scheduled notifications
     func cancelAllNotifications() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()

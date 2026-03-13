@@ -180,6 +180,7 @@ struct WatchlistView: View {
                         if editingItem != nil {
                             repository.updateWatchlistItem(item)
                         } else {
+                            AnalyticsService.shared.track(.watchlistItemAdded)
                             repository.addWatchlistItem(item)
                         }
                         editingItem = nil
@@ -197,6 +198,7 @@ struct WatchlistView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
                     if let item = itemToDelete {
+                        AnalyticsService.shared.track(.watchlistItemDeleted)
                         let repository = MovieRepository(modelContext: modelContext)
                         repository.deleteWatchlistItem(item)
                         refreshTrigger += 1
@@ -240,6 +242,7 @@ struct WatchlistView: View {
     }
 
     private func moveToWatched(_ item: WatchlistItem) {
+        AnalyticsService.shared.track(.watchlistMovedToWatched)
         let repository = MovieRepository(modelContext: modelContext)
         _ = repository.moveToWatched(item)
         refreshTrigger += 1

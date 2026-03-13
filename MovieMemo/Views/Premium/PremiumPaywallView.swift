@@ -69,6 +69,9 @@ struct PremiumPaywallView: View {
                 }
             }
         }
+        .onAppear {
+            AnalyticsService.shared.track(.paywallViewed)
+        }
         .task {
             if manager.products.isEmpty {
                 await manager.loadProducts()
@@ -270,7 +273,10 @@ struct PremiumPaywallView: View {
     private var ctaSection: some View {
         Button {
             isPressed.toggle()
-            guard let product = selectedProduct else {
+            let product = selectedID == SubscriptionManager.yearlyProductID
+                ? manager.yearlyProduct
+                : manager.monthlyProduct
+            guard let product else {
                 showProductsUnavailable = true
                 Task {
                     try? await Task.sleep(nanoseconds: 4_000_000_000)

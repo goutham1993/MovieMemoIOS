@@ -287,8 +287,14 @@ struct WatchedMoviesView: View {
                     onSave: { entry in
                         let repository = MovieRepository(modelContext: modelContext)
                         if config.entry != nil {
+                            AnalyticsService.shared.track(.movieEdited)
                             repository.updateWatchedEntry(entry)
                         } else {
+                            AnalyticsService.shared.track(.movieAdded, properties: [
+                                "has_rating": entry.rating != nil,
+                                "has_genre": entry.genre != nil && !entry.genre!.isEmpty,
+                                "has_notes": entry.notes != nil && !entry.notes!.isEmpty
+                            ])
                             repository.addWatchedEntry(entry)
                             ReviewManager.shared.recordMovieLogged()
                         }
@@ -305,6 +311,7 @@ struct WatchedMoviesView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
                     if let entry = entryToDelete {
+                        AnalyticsService.shared.track(.movieDeleted)
                         let repository = MovieRepository(modelContext: modelContext)
                         repository.deleteWatchedEntry(entry)
                         refreshTrigger += 1
@@ -315,6 +322,17 @@ struct WatchedMoviesView: View {
             }
         }
         .background(Theme.bg.ignoresSafeArea())
+        .onChange(of: searchText) { _, newValue in
+            if !newValue.isEmpty {
+                AnalyticsService.shared.track(.searchUsed)
+            }
+        }
+        .onChange(of: selectedFilter) { _, newValue in
+            AnalyticsService.shared.track(.filterApplied, properties: ["filter": newValue.rawValue])
+        }
+        .onChange(of: sortOption) { _, newValue in
+            AnalyticsService.shared.track(.sortChanged, properties: ["sort": newValue.rawValue])
+        }
         .onAppear {
             refreshTrigger += 1
         }
@@ -552,14 +570,20 @@ struct WatchedMovieRowView: View {
 private struct RatingBadgeView: View {
     let rating: Int
 
+    private let ratingColor = Color(red: 0.8, green: 0.65, blue: 0)
+
     var body: some View {
-        Text(String(format: "%g", Double(rating)))
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.yellow.opacity(0.15))
-            .foregroundStyle(Color(red: 0.8, green: 0.65, blue: 0))
-            .clipShape(Capsule())
+        HStack(spacing: 3) {
+            Image(systemName: "star.fill")
+                .font(.system(size: 10, weight: .semibold))
+            Text(String(format: "%g", Double(rating)))
+                .font(.caption.weight(.bold))
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(ratingColor.opacity(0.15))
+        .foregroundStyle(ratingColor)
+        .clipShape(Capsule())
     }
 }
 

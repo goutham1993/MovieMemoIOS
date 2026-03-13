@@ -117,6 +117,7 @@ struct SettingsView: View {
                 // MARK: - Data Management
                 Section {
                     Button {
+                        AnalyticsService.shared.track(.dataExported)
                         exportFileURL = nil
                         if let data = repository?.exportData() {
                             let formatter = DateFormatter()
@@ -190,6 +191,7 @@ struct SettingsView: View {
                         .padding(.vertical, 4)
                     } else {
                         Button {
+                            AnalyticsService.shared.track(.upgradeTappedSettings)
                             showingPaywall = true
                         } label: {
                             HStack(spacing: 12) {
@@ -251,6 +253,7 @@ struct SettingsView: View {
                     }
 
                     Button {
+                        AnalyticsService.shared.track(.rateAppTapped)
                         ReviewManager.shared.requestReviewDirectly()
                     } label: {
                         HStack(spacing: 12) {
@@ -322,10 +325,12 @@ struct SettingsView: View {
                 DocumentPicker { url in
                     if let data = try? Data(contentsOf: url) {
                         if repository?.importData(data) == true {
+                            AnalyticsService.shared.track(.dataImported)
                             triggerSuccessHaptic()
                             successMessage = "Data imported successfully!"
                             showingSuccessAlert = true
                         } else {
+                            AnalyticsService.shared.track(.dataImportFailed)
                             successMessage = "Failed to import data. Please check the file format."
                             showingSuccessAlert = true
                         }
@@ -335,6 +340,7 @@ struct SettingsView: View {
             .alert("Clear Watched Movies", isPresented: $showingClearWatchedAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Clear All", role: .destructive) {
+                    AnalyticsService.shared.track(.clearedWatchedMovies)
                     repository?.clearAllWatchedEntries()
                     triggerSuccessHaptic()
                     successMessage = "All watched movies have been cleared."
@@ -346,6 +352,7 @@ struct SettingsView: View {
             .alert("Clear Watchlist", isPresented: $showingClearWatchlistAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Clear All", role: .destructive) {
+                    AnalyticsService.shared.track(.clearedWatchlistItems)
                     repository?.clearAllWatchlistItems()
                     triggerSuccessHaptic()
                     successMessage = "All watchlist items have been cleared."

@@ -12,10 +12,15 @@ struct InsightsView: View {
     @State private var viewModel: InsightsViewModel?
 
     var body: some View {
-        if subscriptionManager.isPremium {
-            premiumContent
-        } else {
-            PremiumPaywallView()
+        Group {
+            if subscriptionManager.isPremium {
+                premiumContent
+            } else {
+                PremiumPaywallView()
+            }
+        }
+        .onAppear {
+            AnalyticsService.shared.track(.insightsViewed)
         }
     }
 
