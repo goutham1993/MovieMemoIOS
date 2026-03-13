@@ -146,18 +146,25 @@ class MovieRepository: ObservableObject {
     }
     
     func moveToWatched(_ item: WatchlistItem) -> WatchedEntry {
+        let location: LocationType = {
+            guard let raw = item.whereToWatch,
+                  let where2Watch = WhereToWatch(rawValue: raw) else { return .home }
+            switch where2Watch {
+            case .theater: return .theater
+            case .ott:     return .home
+            case .other:   return .other
+            }
+        }()
+
         let watchedEntry = WatchedEntry(
             title: item.title,
             watchedDate: DateFormatter.isoDateFormatter.string(from: Date()),
-            locationType: .home,
-            timeOfDay: .evening, // Default to evening when moving from watchlist
+            locationType: location,
+            timeOfDay: .evening,
+            genre: item.genre,
+            notes: item.notes,
             language: item.languageEnum
         )
-        
-        // Copy notes if available
-        if let notes = item.notes {
-            watchedEntry.notes = notes
-        }
         
         addWatchedEntry(watchedEntry)
         deleteWatchlistItem(item)
