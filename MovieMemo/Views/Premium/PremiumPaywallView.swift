@@ -4,7 +4,7 @@
 //
 
 import SwiftUI
-import StoreKit
+import RevenueCat
 
 // MARK: - Main Paywall View
 
@@ -73,8 +73,8 @@ struct PremiumPaywallView: View {
             AnalyticsService.shared.track(.paywallViewed)
         }
         .task {
-            if manager.products.isEmpty {
-                await manager.loadProducts()
+            if manager.packages.isEmpty {
+                await manager.loadOfferings()
             }
         }
         .onChange(of: manager.purchaseError) { _, newValue in
@@ -112,7 +112,6 @@ struct PremiumPaywallView: View {
 
     private var heroSection: some View {
         ZStack {
-            // Soft radial orb
             RadialGradient(
                 colors: [Color.premiumGold.opacity(0.20), Color.clear],
                 center: .center,
@@ -123,7 +122,6 @@ struct PremiumPaywallView: View {
             .blur(radius: 30)
 
             VStack(spacing: 0) {
-                // Icon
                 ZStack {
                     RoundedRectangle(cornerRadius: Theme.Radius.small)
                         .fill(Color.premiumGold.opacity(0.12))
@@ -193,7 +191,7 @@ struct PremiumPaywallView: View {
         VStack(spacing: Theme.Spacing.lg) {
             HStack(spacing: Theme.Spacing.sm) {
                 PricingCard(
-                    product: manager.monthlyProduct,
+                    package: manager.monthlyPackage,
                     isSelected: selectedID == SubscriptionManager.monthlyProductID,
                     badge: nil,
                     fallbackPrice: "$2.99",
@@ -205,7 +203,7 @@ struct PremiumPaywallView: View {
                 }
 
                 PricingCard(
-                    product: manager.yearlyProduct,
+                    package: manager.yearlyPackage,
                     isSelected: selectedID == SubscriptionManager.yearlyProductID,
                     badge: manager.savingsPercent.map { "Save \($0)%" } ?? "Save 44%",
                     fallbackPrice: "$19.99",
@@ -217,7 +215,7 @@ struct PremiumPaywallView: View {
                 }
 
                 PricingCard(
-                    product: manager.lifetimeProduct,
+                    package: manager.lifetimePackage,
                     isSelected: selectedID == SubscriptionManager.lifetimeProductID,
                     badge: "Best Value",
                     fallbackPrice: "$49.99",
@@ -261,11 +259,11 @@ struct PremiumPaywallView: View {
 
     // MARK: - CTA Section
 
-    private var selectedProduct: Product? {
+    private var selectedPackage: Package? {
         switch selectedID {
-        case SubscriptionManager.monthlyProductID:  return manager.monthlyProduct
-        case SubscriptionManager.yearlyProductID:   return manager.yearlyProduct
-        case SubscriptionManager.lifetimeProductID: return manager.lifetimeProduct
+        case SubscriptionManager.monthlyProductID:  return manager.monthlyPackage
+        case SubscriptionManager.yearlyProductID:   return manager.yearlyPackage
+        case SubscriptionManager.lifetimeProductID: return manager.lifetimePackage
         default: return nil
         }
     }
@@ -273,10 +271,7 @@ struct PremiumPaywallView: View {
     private var ctaSection: some View {
         Button {
             isPressed.toggle()
-            let product = selectedID == SubscriptionManager.yearlyProductID
-                ? manager.yearlyProduct
-                : manager.monthlyProduct
-            guard let product else {
+            guard let package = selectedPackage else {
                 showProductsUnavailable = true
                 Task {
                     try? await Task.sleep(nanoseconds: 4_000_000_000)
@@ -284,7 +279,7 @@ struct PremiumPaywallView: View {
                 }
                 return
             }
-            Task { await manager.purchase(product) }
+            Task { await manager.purchase(package) }
         } label: {
             HStack(spacing: Theme.Spacing.sm) {
                 if manager.isPurchasing {
@@ -359,10 +354,7 @@ struct PremiumPaywallView: View {
     // MARK: - Helpers
 
     private var hasIntroOffer: Bool {
-        let product = selectedID == SubscriptionManager.yearlyProductID
-            ? manager.yearlyProduct
-            : manager.monthlyProduct
-        return product?.subscription?.introductoryOffer != nil
+        selectedPackage?.storeProduct.introductoryDiscount != nil
     }
 }
 
@@ -416,7 +408,7 @@ private struct PaywallFeatureCard: View {
 // MARK: - Pricing Card
 
 private struct PricingCard: View {
-    let product: Product?
+    let package: Package?
     let isSelected: Bool
     let badge: String?
     let fallbackPrice: String
@@ -424,19 +416,16 @@ private struct PricingCard: View {
     let onSelect: () -> Void
 
     private var hasBadge: Bool { badge != nil }
-    private var displayName: String {
-        product?.displayName ?? fallbackPrice
-    }
 
     var body: some View {
         Button(action: onSelect) {
             VStack(spacing: Theme.Spacing.sm) {
-                Text(product?.displayName ?? period.capitalized)
+                Text(package?.storeProduct.localizedTitle ?? period.capitalized)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.secondaryText)
                     .lineLimit(1)
 
-                Text(product?.displayPrice ?? fallbackPrice)
+                Text(package?.localizedPriceString ?? fallbackPrice)
                     .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(isSelected ? Color.premiumGold : Theme.primaryText)
                     .contentTransition(.numericText())

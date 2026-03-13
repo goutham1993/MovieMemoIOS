@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		23F7C26E2F57DF1900B7603D /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 23F7C26D2F57DF1900B7603D /* PostHog */; };
+		23F7C2722F57DF1900B7603D /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 23F7C2712F57DF1900B7603D /* RevenueCat */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				23F7C26E2F57DF1900B7603D /* PostHog in Frameworks */,
+				23F7C2722F57DF1900B7603D /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +120,7 @@
 			name = MovieMemo;
 			packageProductDependencies = (
 				23F7C26D2F57DF1900B7603D /* PostHog */,
+				23F7C2712F57DF1900B7603D /* RevenueCat */,
 			);
 			productName = MovieMemo;
 			productReference = 23C1C5B22EADB44900F16278 /* MovieMemo.app */;
@@ -203,6 +206,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				23F7C26C2F57DF1900B7603D /* XCRemoteSwiftPackageReference "posthog-ios" */,
+				23F7C2702F57DF1900B7603D /* XCRemoteSwiftPackageReference "purchases-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 23C1C5B32EADB44900F16278 /* Products */;
@@ -642,6 +646,14 @@
 				minimumVersion = 3.42.1;
 			};
 		};
+		23F7C2702F57DF1900B7603D /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -649,6 +661,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 23F7C26C2F57DF1900B7603D /* XCRemoteSwiftPackageReference "posthog-ios" */;
 			productName = PostHog;
+		};
+		23F7C2712F57DF1900B7603D /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 23F7C2702F57DF1900B7603D /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
