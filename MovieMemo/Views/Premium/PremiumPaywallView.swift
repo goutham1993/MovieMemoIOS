@@ -218,7 +218,7 @@ struct PremiumPaywallView: View {
                     package: manager.lifetimePackage,
                     isSelected: selectedID == SubscriptionManager.lifetimeProductID,
                     badge: "Best Value",
-                    fallbackPrice: "$49.99",
+                    fallbackPrice: "$39.99",
                     period: "one time"
                 ) {
                     withAnimation(.easeInOut(duration: 0.15)) {

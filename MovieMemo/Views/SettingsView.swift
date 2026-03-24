@@ -30,6 +30,7 @@ struct SettingsView: View {
         components.minute = 0
         return Calendar.current.date(from: components) ?? Date()
     }()
+    @State private var savedNotificationTime: Date?
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
@@ -99,13 +100,23 @@ struct SettingsView: View {
                                        selection: $notificationTime,
                                        displayedComponents: .hourAndMinute)
                                 .datePickerStyle(.compact)
-                                .onChange(of: notificationTime) { _, newTime in
-                                    NotificationManager.shared.scheduleWeekendReminder(at: newTime)
+
+                            if savedNotificationTime != notificationTime {
+                                Button {
+                                    NotificationManager.shared.scheduleWeekendReminder(at: notificationTime)
+                                    savedNotificationTime = notificationTime
                                     let formatter = DateFormatter()
                                     formatter.timeStyle = .short
-                                    successMessage = "Reminder time updated to \(formatter.string(from: newTime))"
+                                    successMessage = "Reminder time updated to \(formatter.string(from: notificationTime))"
                                     showingSuccessAlert = true
+                                } label: {
+                                    Text("Save Reminder Time")
+                                        .font(.subheadline.weight(.semibold))
+                                        .frame(maxWidth: .infinity)
                                 }
+                                .buttonStyle(.borderedProminent)
+                                .tint(Theme.accent)
+                            }
 
                             Text("You'll receive a reminder every Saturday.")
                                 .font(.footnote)
@@ -375,6 +386,10 @@ struct SettingsView: View {
             NotificationManager.shared.getAuthorizationStatus { status in
                 notificationsEnabled = (status == .authorized)
                 notificationsDeniedBySystem = (status == .denied)
+            }
+
+            if savedNotificationTime == nil {
+                savedNotificationTime = notificationTime
             }
         }
     }
