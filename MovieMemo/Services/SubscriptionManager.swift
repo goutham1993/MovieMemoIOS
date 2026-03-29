@@ -54,6 +54,9 @@ final class SubscriptionManager {
     // MARK: - Load Products
 
     func loadProducts() async {
+        #if DEBUG
+        print("[SubscriptionManager] loadProducts started (ids: \(Self.monthlyProductID), \(Self.yearlyProductID), \(Self.lifetimeProductID))")
+        #endif
         do {
             let fetched = try await Product.products(
                 for: [Self.monthlyProductID, Self.yearlyProductID, Self.lifetimeProductID]
@@ -62,6 +65,14 @@ final class SubscriptionManager {
             products = fetched.sorted {
                 (order.firstIndex(of: $0.id) ?? .max) < (order.firstIndex(of: $1.id) ?? .max)
             }
+            #if DEBUG
+            if products.isEmpty {
+                print("[SubscriptionManager] loadProducts finished: 0 products — in Xcode: Edit Scheme → Run → Options → StoreKit Configuration must point at StoreKitConfig.storekit (path is workspace-relative, often MovieMemo/StoreKitConfig.storekit)")
+            } else {
+                let lines = products.map { "\($0.id) (\($0.displayPrice))" }.joined(separator: ", ")
+                print("[SubscriptionManager] loadProducts finished: \(products.count) product(s) — \(lines)")
+            }
+            #endif
             await checkEntitlements()
         } catch {
             print("[SubscriptionManager] Failed to load products: \(error)")
@@ -83,27 +94,51 @@ final class SubscriptionManager {
 
         AnalyticsService.shared.track(.purchaseInitiated, properties: props)
 
+        #if DEBUG
+        print("[SubscriptionManager] purchase started — \(product.id) (\(product.displayPrice))")
+        #endif
         do {
             let result = try await product.purchase()
             switch result {
             case .success(let verification):
+                #if DEBUG
+                print("[SubscriptionManager] purchase StoreKit result: success (verification received)")
+                #endif
                 do {
                     let transaction = try verify(verification)
                     await transaction.finish()
                     await checkEntitlements()
+                    #if DEBUG
+                    print("[SubscriptionManager] purchase verified & finished — isPremium=\(isPremium)")
+                    #endif
                     AnalyticsService.shared.track(.purchaseCompleted, properties: props)
                 } catch {
+                    #if DEBUG
+                    print("[SubscriptionManager] purchase verification failed: \(error.localizedDescription)")
+                    #endif
                     purchaseError = error.localizedDescription
                     AnalyticsService.shared.track(.purchaseVerifyFailed, properties: props.merging(["error": error.localizedDescription]) { _, new in new })
                 }
             case .userCancelled:
+                #if DEBUG
+                print("[SubscriptionManager] purchase StoreKit result: userCancelled")
+                #endif
                 AnalyticsService.shared.track(.purchaseCancelled, properties: props)
             case .pending:
+                #if DEBUG
+                print("[SubscriptionManager] purchase StoreKit result: pending (e.g. Ask to Buy)")
+                #endif
                 AnalyticsService.shared.track(.purchasePending, properties: props)
             @unknown default:
+                #if DEBUG
+                print("[SubscriptionManager] purchase StoreKit result: unknown default")
+                #endif
                 break
             }
         } catch {
+            #if DEBUG
+            print("[SubscriptionManager] purchase threw: \(error.localizedDescription)")
+            #endif
             purchaseError = error.localizedDescription
             AnalyticsService.shared.track(.purchaseFailed, properties: props.merging(["error": error.localizedDescription]) { _, new in new })
         }

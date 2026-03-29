@@ -273,10 +273,17 @@ struct PremiumPaywallView: View {
     private var ctaSection: some View {
         Button {
             isPressed.toggle()
-            let product = selectedID == SubscriptionManager.yearlyProductID
-                ? manager.yearlyProduct
-                : manager.monthlyProduct
-            guard let product else {
+            #if DEBUG
+            let resolvedSelection = selectedProduct
+            print("[PremiumPaywall] Subscribe tapped — selectedID=\(selectedID)")
+            print(
+                "[PremiumPaywall] Products loaded: monthly=\(manager.monthlyProduct != nil) yearly=\(manager.yearlyProduct != nil) lifetime=\(manager.lifetimeProduct != nil); selectedProduct=\(resolvedSelection?.id ?? "nil")"
+            )
+            #endif
+            guard let product = selectedProduct else {
+                #if DEBUG
+                print("[PremiumPaywall] selectedProduct is nil — showing products unavailable")
+                #endif
                 showProductsUnavailable = true
                 Task {
                     try? await Task.sleep(nanoseconds: 4_000_000_000)
@@ -284,6 +291,9 @@ struct PremiumPaywallView: View {
                 }
                 return
             }
+            #if DEBUG
+            print("[PremiumPaywall] CTA calling purchase for: \(product.id) (\(product.displayPrice))")
+            #endif
             Task { await manager.purchase(product) }
         } label: {
             HStack(spacing: Theme.Spacing.sm) {
