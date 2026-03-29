@@ -530,9 +530,14 @@ struct WatchedMovieRowView: View {
             }
         }
         .padding(16)
-        .background(Theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
+        .background {
+            TicketCardBackground(
+                cornerRadius: 18,
+                notchRadius: 13
+            )
+        }
+        .shadow(color: .black.opacity(0.45), radius: 14, x: 0, y: 8)
+        .shadow(color: Theme.accent.opacity(0.12), radius: 20, x: 0, y: 0)
     }
 
     private func formatDate(_ dateString: String) -> String {
@@ -562,6 +567,109 @@ struct WatchedMovieRowView: View {
         case .friendsHome: return "person.2.fill"
         case .other: return "mappin"
         }
+    }
+}
+
+// MARK: - Ticket Card Background
+
+private struct TicketCardBackground: View {
+    let cornerRadius: CGFloat
+    let notchRadius: CGFloat
+
+    /// Slightly lighter than flat `Theme.surface` so tickets read as objects on the black list background.
+    private var ticketFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(hex: "24242C"),
+                Theme.surface2,
+                Color(hex: "15151A")
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var rimStroke: Color { Color.white.opacity(0.18) }
+    private var perforationStroke: Color { Color.white.opacity(0.32) }
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            let notchY = size.height * 0.52
+            let inset = max(12, notchRadius + 8)
+            let perforationX = max(inset, size.width * 0.72)
+
+            ZStack {
+                TicketShape(
+                    cornerRadius: cornerRadius,
+                    notchRadius: notchRadius,
+                    notchY: notchY
+                )
+                .fill(ticketFill, style: FillStyle(eoFill: true, antialiased: true))
+                .overlay(
+                    TicketShape(
+                        cornerRadius: cornerRadius,
+                        notchRadius: notchRadius,
+                        notchY: notchY
+                    )
+                    .stroke(rimStroke, lineWidth: 1, antialiased: true)
+                )
+
+                // Perforation (no blend mode — reads clearly on dark fills)
+                Path { path in
+                    path.move(to: CGPoint(x: perforationX, y: 12))
+                    path.addLine(to: CGPoint(x: perforationX, y: size.height - 12))
+                }
+                .stroke(
+                    perforationStroke,
+                    style: StrokeStyle(lineWidth: 1.25, lineCap: .round, dash: [4, 5])
+                )
+
+                // Soft inner vignette so the center feels like printed ticket stock
+                TicketShape(
+                    cornerRadius: cornerRadius,
+                    notchRadius: notchRadius,
+                    notchY: notchY
+                )
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.black.opacity(0),
+                            Color.black.opacity(0.18)
+                        ],
+                        startPoint: .center,
+                        endPoint: .bottom
+                    ),
+                    style: FillStyle(eoFill: true, antialiased: true)
+                )
+                .allowsHitTesting(false)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private struct TicketShape: Shape {
+    let cornerRadius: CGFloat
+    let notchRadius: CGFloat
+    let notchY: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+
+        p.addPath(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .path(in: rect)
+        )
+
+        // Punch-out notches using even-odd fill.
+        let d = notchRadius * 2
+        let left = CGRect(x: rect.minX - notchRadius, y: notchY - notchRadius, width: d, height: d)
+        let right = CGRect(x: rect.maxX - notchRadius, y: notchY - notchRadius, width: d, height: d)
+        p.addEllipse(in: left)
+        p.addEllipse(in: right)
+
+        return p
     }
 }
 
