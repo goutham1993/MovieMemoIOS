@@ -33,6 +33,28 @@ final class SubscriptionManager: NSObject {
     }
     #endif
 
+    #if DEBUG
+    private static func debugLogLoadedOfferings(_ offerings: Offerings) {
+        print("[SubscriptionManager] Offerings loaded successfully.")
+        let sortedIDs = offerings.all.keys.sorted()
+        print("[SubscriptionManager] Offerings in project: \(sortedIDs)")
+        for id in sortedIDs {
+            guard let offering = offerings.all[id] else { continue }
+            print("  • '\(id)': \(offering.availablePackages.count) package(s)")
+        }
+        if let current = offerings.current {
+            print("[SubscriptionManager] Current offering: '\(current.identifier)' — packages:")
+            for package in current.availablePackages {
+                let pid = package.storeProduct.productIdentifier
+                let price = package.localizedPriceString
+                print("    – \(package.identifier) → \(pid) (\(price))")
+            }
+        } else {
+            print("[SubscriptionManager] No current offering — assign one in the RevenueCat dashboard.")
+        }
+    }
+    #endif
+
     // MARK: - Init
 
     override init() {
@@ -45,6 +67,9 @@ final class SubscriptionManager: NSObject {
     func loadOfferings() async {
         do {
             let offerings = try await Purchases.shared.offerings()
+            #if DEBUG
+            Self.debugLogLoadedOfferings(offerings)
+            #endif
             if let current = offerings.current {
                 packages = current.availablePackages
             }

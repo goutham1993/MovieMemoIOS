@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import StoreKit
 import RevenueCat
 
 @main
@@ -14,7 +15,21 @@ struct MovieMemoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     init() {
-        Purchases.configure(withAPIKey: "test_wseesWUhiwJaKWOismFanmJtHnK")
+        Purchases.configure(withAPIKey: "appl_dFQpktgFJDJEkQhIVBNREFSeFlD")
+
+        #if DEBUG
+        Task {
+            let ids = [
+                SubscriptionManager.monthlyProductID,
+                SubscriptionManager.yearlyProductID,
+                SubscriptionManager.lifetimeProductID
+            ]
+            let products = try? await Product.products(for: ids)
+            print(
+                "[StoreKit] direct fetch count: \(products?.count ?? -1), ids: \(products?.map(\.id) ?? [])"
+            )
+        }
+        #endif
     }
     
     var sharedModelContainer: ModelContainer = {
