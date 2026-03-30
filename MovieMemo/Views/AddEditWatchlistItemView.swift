@@ -242,7 +242,6 @@ struct AddEditWatchlistItemView: View {
         let newItem = WatchlistItem(
             title: title.trimmingCharacters(in: .whitespaces),
             notes: notes.isEmpty ? nil : notes,
-            priority: 2,
             targetDate: targetDate,
             language: language,
             genre: genre.isEmpty ? nil : genre,

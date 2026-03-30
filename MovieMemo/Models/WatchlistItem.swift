@@ -13,7 +13,6 @@ final class WatchlistItem {
     var id: UUID
     var title: String
     var notes: String?
-    var priority: Int // 1-3 (High, Medium, Low)
     var createdAt: Date
     var targetDate: Date?
     var language: String // Language raw value
@@ -23,7 +22,6 @@ final class WatchlistItem {
     init(
         title: String,
         notes: String? = nil,
-        priority: Int = 2, // Default to Medium
         targetDate: Date? = nil,
         language: Language,
         genre: String? = nil,
@@ -32,7 +30,6 @@ final class WatchlistItem {
         self.id = UUID()
         self.title = title
         self.notes = notes
-        self.priority = priority
         self.createdAt = Date()
         self.targetDate = targetDate
         self.language = language.rawValue
@@ -44,24 +41,6 @@ final class WatchlistItem {
     var languageEnum: Language {
         get { Language(rawValue: language) ?? .english }
         set { language = newValue.rawValue }
-    }
-    
-    var priorityDisplayName: String {
-        switch priority {
-        case 1: return "High"
-        case 2: return "Medium"
-        case 3: return "Low"
-        default: return "Medium"
-        }
-    }
-    
-    var priorityIcon: String {
-        switch priority {
-        case 1: return "exclamationmark.circle.fill"
-        case 2: return "clock.fill"
-        case 3: return "bubble.left.fill"
-        default: return "clock.fill"
-        }
     }
 }
 
