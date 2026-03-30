@@ -167,7 +167,7 @@ final class InsightsViewModel {
 
         // --- Languages ---
         let topLanguages: [KeyCount] = {
-            let grouped = Dictionary(grouping: entries, by: { $0.languageEnum.displayName })
+            let grouped = Dictionary(grouping: entries, by: { $0.languageEnum.englishDisplayName })
             return grouped.map { KeyCount(category: $0.key, count: $0.value.count) }
                 .sorted { $0.count > $1.count }
         }()

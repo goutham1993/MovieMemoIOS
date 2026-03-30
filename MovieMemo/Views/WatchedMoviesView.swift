@@ -36,7 +36,7 @@ struct WatchedMoviesView: View {
                 case "genre":
                     return entry.genre?.localizedCaseInsensitiveContains(filterValue) ?? false
                 case "language":
-                    return entry.languageEnum.displayName.localizedCaseInsensitiveContains(filterValue)
+                    return entry.languageEnum.englishDisplayName.localizedCaseInsensitiveContains(filterValue)
                 case "companion":
                     guard let companions = entry.companions, !companions.isEmpty else { return false }
                     return companions.localizedCaseInsensitiveContains(filterValue)
@@ -497,7 +497,7 @@ struct WatchedMovieRowView: View {
                     Label("with \(companions)", systemImage: "person.2")
                 }
 
-                Label(entry.languageEnum.displayName, systemImage: "globe")
+                Label(entry.languageEnum.englishDisplayName, systemImage: "globe")
                 Label(locationText(), systemImage: locationIcon())
 
                 if let duration = entry.durationMin, duration > 0 {

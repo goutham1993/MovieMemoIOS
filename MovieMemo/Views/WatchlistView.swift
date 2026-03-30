@@ -353,7 +353,7 @@ struct WatchlistItemRowView: View {
 
             // Language + Platform tag
             HStack(spacing: 8) {
-                Text(item.languageEnum.displayName)
+                Text(item.languageEnum.englishDisplayName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
