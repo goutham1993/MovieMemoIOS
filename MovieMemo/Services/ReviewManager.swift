@@ -1,8 +1,18 @@
+import Combine
 import StoreKit
+import SwiftUI
 import UIKit
 
+// MARK: - Review prompt sheets (before StoreKit)
+
+enum ReviewPromptSheet: String, Identifiable, Equatable {
+    case satisfaction
+    case feedback
+    var id: String { rawValue }
+}
+
 @MainActor
-final class ReviewManager {
+final class ReviewManager: ObservableObject {
 
     static let shared = ReviewManager()
     private init() {}
@@ -31,20 +41,47 @@ final class ReviewManager {
         }
     }
 
+    @Published private(set) var activeSheet: ReviewPromptSheet?
+
+    var activeSheetBinding: Binding<ReviewPromptSheet?> {
+        Binding(
+            get: { self.activeSheet },
+            set: { self.activeSheet = $0 }
+        )
+    }
+
     func recordMovieLogged() {
         totalMoviesLogged += 1
         requestIfAppropriate()
     }
 
-    /// Called from Settings — bypasses milestone/cooldown gate since the user explicitly asked.
+    /// Settings — goes straight to Apple’s review prompt (no satisfaction sheet).
     func requestReviewDirectly() {
         Task {
-            guard let scene = UIApplication.shared.connectedScenes
-                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
-            else { return }
-            SKStoreReviewController.requestReview(in: scene)
+            performStoreReview()
             lastReviewRequestDate = Date()
         }
+    }
+
+    /// In-app star prompt only (Apple does not offer written review in this dialog).
+    func requestInAppStarRating() {
+        activeSheet = nil
+        Task {
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            performStoreReview()
+        }
+    }
+
+    func dismissSatisfactionPrompt() {
+        activeSheet = nil
+    }
+
+    func userTappedNotReally() {
+        activeSheet = .feedback
+    }
+
+    func feedbackDone() {
+        activeSheet = nil
     }
 
     private func requestIfAppropriate() {
@@ -57,11 +94,15 @@ final class ReviewManager {
 
         Task {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
-            guard let scene = UIApplication.shared.connectedScenes
-                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
-            else { return }
-            SKStoreReviewController.requestReview(in: scene)
             lastReviewRequestDate = Date()
+            activeSheet = .satisfaction
         }
+    }
+
+    private func performStoreReview() {
+        guard let scene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+        else { return }
+        SKStoreReviewController.requestReview(in: scene)
     }
 }
