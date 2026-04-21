@@ -38,12 +38,49 @@ struct MovieMemoApp: App {
             WatchlistItem.self,
             Genre.self
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        // Note: This project's SwiftData SDK doesn't expose a `url:` initializer for ModelConfiguration.
+        // We still name the configuration to make the store stable and resettable in DEBUG.
+        let modelConfiguration = ModelConfiguration(
+            "MovieMemo",
+            schema: schema,
+            isStoredInMemoryOnly: false
+        )
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
+            #if DEBUG
+            // SwiftData can fail to load when the on-device store is incompatible with the current schema.
+            // In DEBUG we reset the local store to unblock development.
+            do {
+                // Best-effort purge: SwiftData's underlying SQLite location is not configurable here,
+                // so we remove any likely store files in Application Support.
+                let appSupport = URL.applicationSupportDirectory
+                let candidates = [
+                    appSupport.appending(path: "MovieMemo").appendingPathExtension("sqlite"),
+                    appSupport.appending(path: "MovieMemo").appendingPathExtension("store"),
+                    appSupport.appending(path: "default").appendingPathExtension("sqlite"),
+                    appSupport.appending(path: "default").appendingPathExtension("store")
+                ]
+                for base in candidates {
+                    let sidecars = [
+                        base,
+                        base.appendingPathExtension("sqlite-wal"),
+                        base.appendingPathExtension("sqlite-shm"),
+                        base.appendingPathExtension("store-wal"),
+                        base.appendingPathExtension("store-shm")
+                    ]
+                    for url in sidecars where FileManager.default.fileExists(atPath: url.path) {
+                        try? FileManager.default.removeItem(at: url)
+                    }
+                }
+                return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            } catch {
+                fatalError("Could not create ModelContainer (even after DEBUG reset): \(error)")
+            }
+            #else
             fatalError("Could not create ModelContainer: \(error)")
+            #endif
         }
     }()
 

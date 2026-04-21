@@ -75,7 +75,7 @@
          </BuildableReference>
       </BuildableProductRunnable>
       <StoreKitConfigurationFileReference
-         identifier = "../../MovieMemo/StoreKitConfig.storekit">
+         identifier = "../../MovieMemo/MovieMemo: Movie Tracker.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
