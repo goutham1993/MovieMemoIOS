@@ -61,7 +61,7 @@ struct MainTabView: View {
         .tint(Theme.accent)
         .environment(subscriptionManager)
         .task {
-            await subscriptionManager.loadProducts()
+            await subscriptionManager.loadOfferings()
         }
         .onChange(of: selectedTab) { _, newTab in
             let names = ["watched", "watchlist", "insights", "settings"]
