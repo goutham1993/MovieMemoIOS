@@ -232,7 +232,7 @@ struct AddEditMovieView: View {
                     CinematicRow(
                         icon: "globe",
                         label: "Language",
-                        value: language.displayName,
+                        value: language.englishDisplayName,
                         chevron: true
                     ) { showLanguageSheet = true }
                 }
@@ -632,7 +632,7 @@ private struct LanguagePickerSheet: View {
                     VStack(spacing: 0) {
                         CinematicPickerRow(
                             icon: nil,
-                            label: lang.displayName,
+                            label: lang.englishDisplayName,
                             isSelected: lang == selection
                         ) {
                             selection = lang

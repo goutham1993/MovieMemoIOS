@@ -289,38 +289,6 @@ struct PlatformTagView: View {
     }
 }
 
-// MARK: - Priority Dot View
-struct PriorityDotView: View {
-    let priority: Int
-
-    private var color: Color {
-        switch priority {
-        case 1: return .orange
-        case 2: return Color(red: 0.85, green: 0.65, blue: 0.0)
-        default: return Color(.tertiaryLabel)
-        }
-    }
-
-    private var label: String {
-        switch priority {
-        case 1: return "High Priority"
-        case 2: return "Soon"
-        default: return "Casual"
-        }
-    }
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(color)
-                .frame(width: 7, height: 7)
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(color)
-        }
-    }
-}
-
 // MARK: - Watchlist Item Row View
 struct WatchlistItemRowView: View {
     let item: WatchlistItem
@@ -342,18 +310,13 @@ struct WatchlistItemRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Title + Priority
-            HStack(alignment: .top) {
-                Text(item.title)
-                    .font(.title3.weight(.semibold))
-                    .lineLimit(2)
-                Spacer(minLength: 8)
-                PriorityDotView(priority: item.priority)
-            }
+            Text(item.title)
+                .font(.title3.weight(.semibold))
+                .lineLimit(2)
 
             // Language + Platform tag
             HStack(spacing: 8) {
-                Text(item.languageEnum.displayName)
+                Text(item.languageEnum.englishDisplayName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 

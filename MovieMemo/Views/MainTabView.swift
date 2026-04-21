@@ -10,6 +10,8 @@ import SwiftData
 import UIKit
 
 struct MainTabView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab = 0
     @State private var subscriptionManager = SubscriptionManager()
 
@@ -71,6 +73,14 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FilterWatchedMovies"))) { _ in
             // Only deep-link into Watched if the user is premium (insights tab is the source)
             selectedTab = 0
+        }
+        .onAppear {
+            AutoExportService.performIfNeeded(modelContext: modelContext)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                AutoExportService.performIfNeeded(modelContext: modelContext)
+            }
         }
     }
 }

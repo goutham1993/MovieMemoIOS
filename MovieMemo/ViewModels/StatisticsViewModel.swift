@@ -118,7 +118,7 @@ class StatisticsViewModel: ObservableObject {
             .map { KeyCount(category: $0.key, count: $0.value) }
         
         // Movies by language
-        let languageCounts = Dictionary(grouping: entries, by: { $0.languageEnum.displayName })
+        let languageCounts = Dictionary(grouping: entries, by: { $0.languageEnum.englishDisplayName })
             .mapValues { $0.count }
             .sorted { $0.value > $1.value }
             .map { KeyCount(category: $0.key, count: $0.value) }

@@ -178,7 +178,7 @@ struct AddEditWatchlistItemView: View {
                         CinematicRow(
                             icon: "globe",
                             label: "Language",
-                            value: language.displayName
+                            value: language.englishDisplayName
                         ) {
                             showLanguageSheet = true
                         }
@@ -242,7 +242,6 @@ struct AddEditWatchlistItemView: View {
         let newItem = WatchlistItem(
             title: title.trimmingCharacters(in: .whitespaces),
             notes: notes.isEmpty ? nil : notes,
-            priority: 2,
             targetDate: targetDate,
             language: language,
             genre: genre.isEmpty ? nil : genre,
@@ -314,7 +313,7 @@ private struct WatchlistLanguagePickerSheet: View {
                     VStack(spacing: 0) {
                         CinematicPickerRow(
                             icon: lang.sfSymbol,
-                            label: lang.displayName,
+                            label: lang.englishDisplayName,
                             isSelected: lang == selection
                         ) {
                             selection = lang

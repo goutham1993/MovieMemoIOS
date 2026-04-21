@@ -13,9 +13,8 @@ import UserNotifications
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(SubscriptionManager.self) private var subscriptionManager
+    @AppStorage(AutoExportService.enabledUserDefaultsKey) private var autoDataExportEnabled = false
     @State private var repository: MovieRepository?
-    @State private var showingClearWatchedAlert = false
-    @State private var showingClearWatchlistAlert = false
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     @State private var showingSuccessAlert = false
@@ -127,6 +126,8 @@ struct SettingsView: View {
 
                 // MARK: - Data Management
                 Section {
+                    Toggle("Automatic monthly backup", isOn: $autoDataExportEnabled)
+
                     Button {
                         AnalyticsService.shared.track(.dataExported)
                         exportFileURL = nil
@@ -159,20 +160,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Data Management")
                 } footer: {
-                    Text("Your data stays on your device unless you export it.")
-                }
-
-                // MARK: - Danger Zone
-                Section("Danger Zone") {
-                    Button("Clear All Watched Movies", role: .destructive) {
-                        showingClearWatchedAlert = true
-                    }
-                    .disabled(repository == nil)
-
-                    Button("Clear All Watchlist Items", role: .destructive) {
-                        showingClearWatchlistAlert = true
-                    }
-                    .disabled(repository == nil)
+                    Text("When enabled, on the 1st of each month we automatically export your data and store it on your phone so you never lose your data. Backups are saved in the MovieMemoExports folder on this device. Your data stays on your device unless you share an export.")
                 }
 
                 // MARK: - Premium
@@ -347,30 +335,6 @@ struct SettingsView: View {
                         }
                     }
                 }
-            }
-            .alert("Clear Watched Movies", isPresented: $showingClearWatchedAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Clear All", role: .destructive) {
-                    AnalyticsService.shared.track(.clearedWatchedMovies)
-                    repository?.clearAllWatchedEntries()
-                    triggerSuccessHaptic()
-                    successMessage = "All watched movies have been cleared."
-                    showingSuccessAlert = true
-                }
-            } message: {
-                Text("This will permanently delete all watched movies. This action cannot be undone.")
-            }
-            .alert("Clear Watchlist", isPresented: $showingClearWatchlistAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Clear All", role: .destructive) {
-                    AnalyticsService.shared.track(.clearedWatchlistItems)
-                    repository?.clearAllWatchlistItems()
-                    triggerSuccessHaptic()
-                    successMessage = "All watchlist items have been cleared."
-                    showingSuccessAlert = true
-                }
-            } message: {
-                Text("This will permanently delete all watchlist items. This action cannot be undone.")
             }
             .alert("Success", isPresented: $showingSuccessAlert) {
                 Button("OK") { }

@@ -130,7 +130,6 @@ class MovieRepository: ObservableObject {
             // Update the existing item with new values
             existingItem.title = item.title
             existingItem.notes = item.notes
-            existingItem.priority = item.priority
             existingItem.targetDate = item.targetDate
             existingItem.language = item.language
             existingItem.genre = item.genre
@@ -310,7 +309,6 @@ class MovieRepository: ObservableObject {
             let watchlistItem = WatchlistItem(
                 title: item.title,
                 notes: item.notes,
-                priority: item.priority,
                 targetDate: nil,
                 language: Language(rawValue: item.language) ?? .english,
                 genre: nil,
@@ -437,7 +435,6 @@ struct WatchlistItemData: Codable {
     let id: UUID
     let title: String
     let notes: String?
-    let priority: Int
     let createdAt: Date
     let targetDate: Date?
     let language: String
@@ -448,7 +445,6 @@ struct WatchlistItemData: Codable {
         self.id = watchlistItem.id
         self.title = watchlistItem.title
         self.notes = watchlistItem.notes
-        self.priority = watchlistItem.priority
         self.createdAt = watchlistItem.createdAt
         self.targetDate = watchlistItem.targetDate
         self.language = watchlistItem.language
@@ -460,7 +456,6 @@ struct WatchlistItemData: Codable {
         let item = WatchlistItem(
             title: title,
             notes: notes,
-            priority: priority,
             targetDate: targetDate,
             language: Language(rawValue: language) ?? .english,
             genre: genre, // Will be nil for old exports, preserving backward compatibility
@@ -516,7 +511,6 @@ private struct AndroidWatchedEntry: Decodable {
 private struct AndroidWatchlistItem: Decodable {
     let title: String
     let notes: String?
-    let priority: Int
     let createdAt: Int64
     let language: String
     let whereToWatch: String?
