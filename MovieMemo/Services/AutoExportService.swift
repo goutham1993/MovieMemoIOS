@@ -37,7 +37,7 @@ enum AutoExportService {
 
         let repository = MovieRepository(modelContext: modelContext)
         guard let data = repository.exportData() else {
-            print("AutoExport: exportData returned nil")
+            Log.error("AutoExport: exportData returned nil")
             return
         }
 
@@ -49,7 +49,7 @@ enum AutoExportService {
             UserDefaults.standard.set(currentYM, forKey: lastYearMonthKey)
             AnalyticsService.shared.track(.autoExportCompleted)
         } catch {
-            print("AutoExport: write error: \(error)")
+            Log.error("AutoExport: write error: \(String(describing: error))")
         }
     }
 

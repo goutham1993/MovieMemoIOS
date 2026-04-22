@@ -17,7 +17,7 @@ class NotificationManager {
     func requestAuthorization(completion: @escaping (Bool) -> Void) {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
-                print("Notification authorization error: \(error)")
+                Log.error("Notification authorization error: \(String(describing: error))")
             }
             DispatchQueue.main.async {
                 completion(granted)
@@ -58,11 +58,11 @@ class NotificationManager {
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Error scheduling weekend reminder: \(error)")
+                Log.error("Error scheduling weekend reminder: \(String(describing: error))")
             } else {
                 let formatter = DateFormatter()
                 formatter.timeStyle = .short
-                print("Weekend reminder scheduled successfully for Saturdays at \(formatter.string(from: time))")
+                Log.debug("Weekend reminder scheduled successfully for Saturdays at \(formatter.string(from: time))")
             }
         }
     }
@@ -88,7 +88,7 @@ class NotificationManager {
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Error scheduling day reminder: \(error)")
+                Log.error("Error scheduling day reminder: \(String(describing: error))")
             }
         }
     }

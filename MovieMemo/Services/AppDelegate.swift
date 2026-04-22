@@ -12,12 +12,16 @@ import PostHog
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        // PostHog analytics
-        let config = PostHogConfig(apiKey: "phc_214gAWhzmoVPUquxsZqtDvriYABDYhXmJ2hihPMLnBN", host: "https://us.i.posthog.com")
-        config.captureScreenViews = false
-        config.captureApplicationLifecycleEvents = false
-        PostHogSDK.shared.setup(config)
-        AnalyticsService.shared.track(.appOpened)
+        // PostHog analytics (disabled if config is missing)
+        if let apiKey = AppConfig.postHogAPIKey, let host = AppConfig.postHogHost {
+            let config = PostHogConfig(apiKey: apiKey, host: host)
+            config.captureScreenViews = false
+            config.captureApplicationLifecycleEvents = false
+            PostHogSDK.shared.setup(config)
+            AnalyticsService.shared.track(.appOpened)
+        } else {
+            Log.error("PostHog config missing; analytics disabled.")
+        }
         
         UNUserNotificationCenter.current().delegate = self
         

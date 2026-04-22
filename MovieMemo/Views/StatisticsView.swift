@@ -65,19 +65,15 @@ struct StatisticsView: View {
         .onAppear {
             AnalyticsService.shared.track(.statisticsViewed)
             if viewModel == nil {
-                print("Creating ViewModel...")
                 viewModel = StatisticsViewModel(repository: MovieRepository(modelContext: modelContext))
-                print("ViewModel created")
             }
         }
         .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
             if let viewModel = viewModel {
                 if isLoading != viewModel.isLoading {
-                    print("UI: Syncing isLoading: \(viewModel.isLoading)")
                     isLoading = viewModel.isLoading
                 }
                 if statisticsData != viewModel.statisticsData {
-                    print("UI: Syncing statisticsData: \(viewModel.statisticsData != nil)")
                     statisticsData = viewModel.statisticsData
                 }
             }

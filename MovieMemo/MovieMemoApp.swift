@@ -15,7 +15,11 @@ struct MovieMemoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     init() {
-        Purchases.configure(withAPIKey: "appl_dFQpktgFJDJEkQhIVBNREFSeFlD")
+        if let apiKey = AppConfig.revenueCatAPIKey {
+            Purchases.configure(withAPIKey: apiKey)
+        } else {
+            Log.error("RevenueCat API key missing; purchases disabled.")
+        }
 
         #if DEBUG
         Task {
@@ -25,9 +29,7 @@ struct MovieMemoApp: App {
                 SubscriptionManager.lifetimeProductID
             ]
             let products = try? await Product.products(for: ids)
-            print(
-                "[StoreKit] direct fetch count: \(products?.count ?? -1), ids: \(products?.map(\.id) ?? [])"
-            )
+            Log.debug("[StoreKit] direct fetch count: \(products?.count ?? -1), ids: \(products?.map(\.id) ?? [])")
         }
         #endif
     }
@@ -79,7 +81,18 @@ struct MovieMemoApp: App {
                 fatalError("Could not create ModelContainer (even after DEBUG reset): \(error)")
             }
             #else
-            fatalError("Could not create ModelContainer: \(error)")
+            Log.fault("Could not create SwiftData ModelContainer. Falling back to in-memory store. Error: \(String(describing: error))")
+            let fallback = ModelConfiguration(
+                "MovieMemoFallbackInMemory",
+                schema: schema,
+                isStoredInMemoryOnly: true
+            )
+            do {
+                return try ModelContainer(for: schema, configurations: [fallback])
+            } catch {
+                Log.fault("In-memory SwiftData ModelContainer also failed: \(String(describing: error))")
+                return try! ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+            }
             #endif
         }
     }()

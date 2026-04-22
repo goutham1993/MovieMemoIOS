@@ -75,7 +75,7 @@ final class SubscriptionManager: NSObject {
             }
             await checkEntitlements()
         } catch {
-            print("[SubscriptionManager] Failed to load offerings: \(error)")
+            Log.error("[SubscriptionManager] Failed to load offerings: \(String(describing: error))")
         }
     }
 
@@ -141,7 +141,7 @@ final class SubscriptionManager: NSObject {
             let customerInfo = try await Purchases.shared.customerInfo()
             updatePremiumStatus(from: customerInfo)
         } catch {
-            print("[SubscriptionManager] Failed to check entitlements: \(error)")
+            Log.error("[SubscriptionManager] Failed to check entitlements: \(String(describing: error))")
         }
     }
 

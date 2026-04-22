@@ -142,7 +142,7 @@ struct SettingsView: View {
                                 exportFileURL = tempURL
                                 triggerSuccessHaptic()
                             } catch {
-                                print("Export write error: \(error)")
+                                Log.error("Export write error: \(String(describing: error))")
                             }
                         }
                         showingExportSheet = true
