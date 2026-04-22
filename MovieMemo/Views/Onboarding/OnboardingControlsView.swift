@@ -10,14 +10,9 @@ struct OnboardingControlsView: View {
     let currentPage: Int
     let totalPages: Int
     let onPrimary: () -> Void
-    let onSecondary: () -> Void
 
     private var primaryLabel: String {
         currentPage == totalPages - 1 ? "Start" : "Continue"
-    }
-
-    private var secondaryLabel: String {
-        currentPage == totalPages - 1 ? "I'll explore first" : "Skip"
     }
 
     var body: some View {
@@ -42,14 +37,6 @@ struct OnboardingControlsView: View {
             .padding(.bottom, Theme.Spacing.xs)
 
             PrimaryGoldButton(label: primaryLabel, action: onPrimary)
-
-            Button(action: onSecondary) {
-                Text(secondaryLabel)
-                    .font(AppFont.body)
-                    .foregroundColor(Theme.secondaryText)
-                    .frame(height: 44)
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, Theme.Spacing.xl)
         .padding(.bottom, Theme.Spacing.xl)

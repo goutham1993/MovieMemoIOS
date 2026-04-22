@@ -34,9 +34,27 @@ struct OnboardingCoordinatorView: View {
                 OnboardingControlsView(
                     currentPage: currentPage,
                     totalPages: totalPages,
-                    onPrimary: advance,
-                    onSecondary: abandon
+                    onPrimary: advance
                 )
+            }
+
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: abandon) {
+                        Text(currentPage == totalPages - 1 ? "I'll explore first" : "Skip")
+                            .font(AppFont.body)
+                            .foregroundColor(Theme.secondaryText)
+                            .padding(.horizontal, Theme.Spacing.md)
+                            .padding(.vertical, Theme.Spacing.sm)
+                            .background(Color.black.opacity(0.18))
+                            .clipShape(Capsule(style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, Theme.Spacing.xl)
+                .padding(.top, Theme.Spacing.lg)
+                Spacer()
             }
         }
         .preferredColorScheme(.dark)
