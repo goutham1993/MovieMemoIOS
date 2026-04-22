@@ -19,10 +19,12 @@ final class ReviewManager: ObservableObject {
 
     private let milestones: Set<Int> = [5, 10, 25]
     private let minimumDaysBetweenRequests = 60
+    private let bannerAutoDismissSeconds: Double = 10
 
     private enum Keys {
         static let totalMoviesLogged = "ReviewManager.totalMoviesLogged"
         static let lastReviewRequestDate = "ReviewManager.lastReviewRequestDate"
+        static let lastPromptedMilestone = "ReviewManager.lastPromptedMilestone"
     }
 
     private var totalMoviesLogged: Int {
@@ -41,7 +43,16 @@ final class ReviewManager: ObservableObject {
         }
     }
 
+    private var lastPromptedMilestone: Int {
+        get { UserDefaults.standard.integer(forKey: Keys.lastPromptedMilestone) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.lastPromptedMilestone) }
+    }
+
+    // Legacy sheet flow (kept for possible future reuse)
     @Published private(set) var activeSheet: ReviewPromptSheet?
+
+    // New non-blocking banner prompt
+    @Published private(set) var isBannerVisible: Bool = false
 
     var activeSheetBinding: Binding<ReviewPromptSheet?> {
         Binding(
@@ -72,6 +83,18 @@ final class ReviewManager: ObservableObject {
         }
     }
 
+    func userTappedRateFromBanner() {
+        dismissBanner()
+        Task {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            performStoreReview()
+        }
+    }
+
+    func dismissBanner() {
+        isBannerVisible = false
+    }
+
     func dismissSatisfactionPrompt() {
         activeSheet = nil
     }
@@ -85,7 +108,11 @@ final class ReviewManager: ObservableObject {
     }
 
     private func requestIfAppropriate() {
-        guard milestones.contains(totalMoviesLogged) else { return }
+        let nextMilestone = milestones
+            .sorted()
+            .first(where: { totalMoviesLogged >= $0 && $0 > lastPromptedMilestone })
+
+        guard let milestone = nextMilestone else { return }
 
         if let lastDate = lastReviewRequestDate {
             let daysSince = Calendar.current.dateComponents([.day], from: lastDate, to: Date()).day ?? 0
@@ -94,8 +121,15 @@ final class ReviewManager: ObservableObject {
 
         Task {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
+            isBannerVisible = true
             lastReviewRequestDate = Date()
-            activeSheet = .satisfaction
+            lastPromptedMilestone = milestone
+
+            // Auto-dismiss so it doesn’t linger forever.
+            Task {
+                try? await Task.sleep(nanoseconds: UInt64(bannerAutoDismissSeconds * 1_000_000_000))
+                self.isBannerVisible = false
+            }
         }
     }
 

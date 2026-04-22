@@ -123,7 +123,7 @@ private struct AppRootView: View {
                     .zIndex(2)
                     .transition(.opacity)
             }
-            ReviewPromptSheetHost()
+            ReviewPromptBannerHost()
         }
         .animation(.easeOut(duration: 0.5), value: hasSeenOnboarding)
         .onAppear { skipFlowForExistingUsers() }

@@ -7,7 +7,7 @@ import SwiftUI
 
 private enum ReviewFeedbackConfig {
     /// Replace with your support inbox before shipping.
-    static let feedbackEmail = "support@example.com"
+    static let feedbackEmail = "buildsbypravalika@gmail.com"
 }
 
 /// Root-level sheets: satisfaction gate → optional improvement (no StoreKit on negative path).
